@@ -44,7 +44,14 @@ if (dSC == -1){
   exit(0);}
   printf("Client Connecté\n");
 
+int dSC2 = accept(dS, (struct sockaddr*) &aC,&lg);
+if (dSC2 == -1){
+  perror("Erreur connexion non acceptée");
+  exit(0);}
+  printf("Client Connecté\n");
+
 while(1){
+  reception()
  
 int sd1 = shutdown(dSC, 2) ; 
 if (sd1 == -1){perror("Erreur shutdown");}
