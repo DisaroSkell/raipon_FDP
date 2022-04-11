@@ -1,0 +1,12 @@
+@startuml
+
+Client1 -> Serveur: Envoie d'un message
+Serveur -> Client2: Relai du message
+Client2 -> Serveur: Envoie d'un message
+Serveur -> Client1: Relai du message
+
+alt message "fin"
+    Serveur -> Client1: arrêt communication
+    Serveur -> Client2: arrêt communication
+end
+@enduml
