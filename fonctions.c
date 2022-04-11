@@ -29,28 +29,28 @@ void reception(int dS){
 }
 
 void traitement_serveur(int dS, int origine, int destinataire){
-  size_t len = 0;
-  ssize_t rcv_len = recv(origine, &len, sizeof(len), 0) ;
-  if (rcv_len == -1){perror("Erreur réception taille message");}
-  printf("%d\n",(int)len);
-  char * msg = (char *) malloc((len)*sizeof(char));
-  ssize_t rcv = recv(origine, msg, len, 0) ;
-  if (rcv == -1){perror("Erreur réception message");}
-  printf("Message reçu : %s\n", msg) ;
+    size_t len = 0;
+    ssize_t rcv_len = recv(origine, &len, sizeof(len), 0) ;
+    if (rcv_len == -1){perror("Erreur réception taille message");}
+    printf("%d\n",(int)len);
+    char * msg = (char *) malloc((len)*sizeof(char));
+    ssize_t rcv = recv(origine, msg, len, 0) ;
+    if (rcv == -1){perror("Erreur réception message");}
+    printf("Message reçu : %s\n", msg) ;
 
-  int end = strcmp(msg, "fin\n");
+    int end = strcmp(msg, "fin\n");
 
-  if (end == 0) {
-    int sd1 = shutdown(origine, 2) ; 
-    int sd2 = shutdown(dS, 2) ;
-    int sd3 = shutdown(destinataire, 2) ;
-    if (sd2 == -1 || sd2 == -1 || sd3 == -1){perror("Erreur shutdown");}
-    printf("Fin du programme");
-  }
+    if (end == 0) {
+        int sd1 = shutdown(origine, 2) ; 
+        int sd2 = shutdown(dS, 2) ;
+        int sd3 = shutdown(destinataire, 2) ;
+        if (sd2 == -1 || sd2 == -1 || sd3 == -1){perror("Erreur shutdown");}
+        printf("Fin du programme");
+    }
 
-  int snd2 = send(destinataire, &len, sizeof(len), 0) ;
-  if (snd2 == -1){perror("Erreur envoi taille message");}
-  int snd = send(destinataire, msg, len , 0) ;
+    int snd2 = send(destinataire, &len, sizeof(len), 0) ;
+    if (snd2 == -1){perror("Erreur envoi taille message");}
+    int snd = send(destinataire, msg, len , 0) ;
     if (snd == -1){perror("Erreur envoi message");}
-  printf("Message Envoyé\n");
-  }
+    printf("Message Envoyé\n");
+}
