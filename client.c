@@ -32,7 +32,7 @@ inet_pton(AF_INET,argv[1],&(aS.sin_addr)) ;
 aS.sin_port = htons(atoi(argv[2])) ;
 socklen_t lgA = sizeof(struct sockaddr_in) ;
 int num = atoi(argv[3]);
-if (numm != 1 || num != 2) {
+if (num != 1 && num != 2) {
   perror("Argument numéro client invalide");
   exit(0);
 }
@@ -52,8 +52,7 @@ while(1){
     reception(dS);
     envoi(dS);
   }
-  
-
+}
 int sd = shutdown(dS,2) ;
 if (sd == -1){perror("Erreur shutdown");}
 printf("Fin du programme");

@@ -51,11 +51,7 @@ if (dSC2 == -1){
   printf("Client Connecté\n");
 
 while(1){
-  reception()
- 
-int sd1 = shutdown(dSC, 2) ; 
-if (sd1 == -1){perror("Erreur shutdown");}
-int sd2 = shutdown(dS, 2) ;
-if (sd2 == -1){perror("Erreur shutdown");}
-printf("Fin du programme");
+  traitement_serveur(dS,dSC,dSC2);
+  traitement_serveur(dS,dSC2,dSC);
+  }
 }
