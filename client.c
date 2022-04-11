@@ -6,26 +6,9 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include "fonctions.h"
+//Ajouter le fonctions.c dans la compilation
 
-void envoi(int dS) {
-    printf("Entrez un message\n");
-    char * m = (char *) malloc(30*sizeof(char));
-    fgets( m, 30*sizeof(char), stdin ); 
-    size_t len= strlen(m)+1;
-    int snd2 = send(dS, &len, sizeof(len),0);
-    if (snd2 == -1){perror("Erreur envoi taille message");}
-    int snd = send(dS, m, len , 0) ;
-    if (snd == -1){perror("Erreur envoi message");}
-    printf("Message Envoyé \n");
-}
-
-void reception(int dS)
-  int r;
-  ssize_t rcv = recv(dS, &r, sizeof(int), 0) ;
-  if (rcv == -1){perror("Erreur réception message");};
-  printf("Réponse reçue : %d\n", r) ;
-  }
-}
 
 int main(int argc, char *argv[]) {
 

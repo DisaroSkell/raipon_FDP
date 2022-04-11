@@ -5,6 +5,8 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include "fonctions.h"
+//Ajouter le fonctions.c dans la compilation
 
 int main(int argc, char *argv[]) {
 
@@ -41,22 +43,9 @@ if (dSC == -1){
   perror("Erreur connexion non acceptée");
   exit(0);}
   printf("Client Connecté\n");
-while(1){
-  size_t len = 0;
-  ssize_t rcv_len = recv(dSC, &len, sizeof(len), 0) ;
-  if (rcv_len == -1){perror("Erreur réception taille message");}
-  printf("%d\n",(int)len);
-  char * msg = (char *) malloc((len)*sizeof(char));
-  ssize_t rcv = recv(dSC, msg, len, 0) ;
-  if (rcv == -1){perror("Erreur réception message");}
-  printf("Message reçu : %s\n", msg) ;
-  
-  int r = rcv ;
 
-  int snd = send(dSC, &r, sizeof(int), 0) ;
-  if (snd == -1){perror("Erreur envoi message");}
-  printf("Message Envoyé\n");
-  }
+while(1){
+ 
 int sd1 = shutdown(dSC, 2) ; 
 if (sd1 == -1){perror("Erreur shutdown");}
 int sd2 = shutdown(dS, 2) ;
