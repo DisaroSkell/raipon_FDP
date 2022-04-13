@@ -11,9 +11,9 @@ Client2 -> Serveur: Message reçu
 Client2 -> Serveur: Envoi d'un message
 Serveur -> Client1: Relai du message
 Client1 -> Serveur: Message reçu
-end
 alt message "fin"
     Serveur -> Client1: arrêt communication
     Serveur -> Client2: arrêt communication
+end
 end
 @enduml
