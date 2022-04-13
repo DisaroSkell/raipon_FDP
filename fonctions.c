@@ -28,7 +28,7 @@ void reception(int dS){
     printf("Message reçu : %s\n", msg);
 }
 
-void traitement_serveur(int dS, int origine, int destinataire){
+void traitement_serveur(int dS, int origine){
     size_t len = 0;
     ssize_t rcv_len = recv(origine, &len, sizeof(len), 0) ;
     if (rcv_len == -1){perror("Erreur réception taille message");}
@@ -43,14 +43,16 @@ void traitement_serveur(int dS, int origine, int destinataire){
     if (end == 0) {
         int sd1 = shutdown(origine, 2) ; 
         int sd2 = shutdown(dS, 2) ;
-        int sd3 = shutdown(destinataire, 2) ;
-        if (sd2 == -1 || sd2 == -1 || sd3 == -1){perror("Erreur shutdown");}
+        if (sd2 == -1 || sd2 == -1){perror("Erreur shutdown");}
         printf("Fin du programme");
     }
-
-    int snd2 = send(destinataire, &len, sizeof(len), 0) ;
-    if (snd2 == -1){perror("Erreur envoi taille message");}
-    int snd = send(destinataire, msg, len , 0) ;
-    if (snd == -1){perror("Erreur envoi message");}
-    printf("Message Envoyé\n");
+    for(i in clients){
+        if (clients[i] != origine) {
+            int snd2 = send(clients[i], &len, sizeof(len), 0) ;
+            if (snd2 == -1){perror("Erreur envoi taille message");}
+            int snd = send(clients[i], msg, len , 0) ;
+            if (snd == -1){perror("Erreur envoi message");}
+            printf("Message Envoyé\n");
+        }
+    }
 }
