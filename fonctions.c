@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fonctions.h"
+#include "serveur.c"
 
 void envoi(int dS) {
     printf("Entrez un message\n");
@@ -28,7 +29,7 @@ void reception(int dS){
     printf("Message reçu : %s\n", msg);
 }
 
-void traitement_serveur(int dS, int origine){
+void traitement_serveur(int origine, struct params){
     size_t len = 0;
     ssize_t rcv_len = recv(origine, &len, sizeof(len), 0) ;
     if (rcv_len == -1){perror("Erreur réception taille message");}
@@ -41,16 +42,14 @@ void traitement_serveur(int dS, int origine){
     int end = strcmp(msg, "fin\n");
 
     if (end == 0) {
-        int sd1 = shutdown(origine, 2) ; 
-        int sd2 = shutdown(dS, 2) ;
-        if (sd2 == -1 || sd2 == -1){perror("Erreur shutdown");}
-        printf("Fin du programme");
+        // pthread end client
+        printf("Fin du thread");
     }
-    for(i in clients){
-        if (clients[i] != origine) {
-            int snd2 = send(clients[i], &len, sizeof(len), 0) ;
+    for(int i; i< sizeof(params.destinataires); i++){
+        if (params.destinataires[i] != origine) {
+            int snd2 = send(params.destinataires[i], &len, sizeof(len), 0) ;
             if (snd2 == -1){perror("Erreur envoi taille message");}
-            int snd = send(clients[i], msg, len , 0) ;
+            int snd = send(params.destinataires[i], msg, len , 0) ;
             if (snd == -1){perror("Erreur envoi message");}
             printf("Message Envoyé\n");
         }
