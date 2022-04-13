@@ -5,10 +5,10 @@ Serveur -> Client1: OK
 Client2 -> Serveur: Authentification
 Serveur -> Client2: OK
 loop communication
-Client1 -> Serveur: Envoie d'un message
+Client1 -> Serveur: Envoi d'un message
 Serveur -> Client2: Relai du message
 Client2 -> Serveur: Message reçu
-Client2 -> Serveur: Envoie d'un message
+Client2 -> Serveur: Envoi d'un message
 Serveur -> Client1: Relai du message
 Client1 -> Serveur: Message reçu
 end
