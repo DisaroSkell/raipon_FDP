@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include "fonctions.h"
 //Ajouter le fonctions.c dans la compilation
 
@@ -41,22 +42,34 @@ int main(int argc, char *argv[]) {
 
   struct sockaddr_in aC ;
   socklen_t lg = sizeof(struct sockaddr_in) ;
-  int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
-  if (dSC == -1){
-    perror("Erreur connexion non acceptée");
-    exit(0);
-  }
-  printf("Client Connecté\n");
 
-  int dSC2 = accept(dS, (struct sockaddr*) &aC,&lg);
-  if (dSC2 == -1){
-    perror("Erreur connexion non acceptée");
-    exit(0);
+  pthread_t t[];
+  int clients[];
+  i = 0;
+  c = 0;
+
+  struct params {
+    int dS;
+    int origin;
+    int destinataires;
   }
-  printf("Client Connecté\n");
+
 
   while(1){
-    traitement_serveur(dS,dSC,dSC2);
-    traitement_serveur(dS,dSC2,dSC);
+    int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
+    if (dSC == -1){
+    perror("Erreur connexion non acceptée");
+    exit(0);
+    }
+    printf("Client Connecté\n");
+    pthread_t new;
+    t[i] = new;
+    clients[c]=dSC;
+
+    struct params mesParams;
+    mesParams.dS = dS;
+    mesParams.origin = dSC;
+    mesParams.destinataires = clients[];
+    pthread_create(&t[i], NULL, &traitement_serveur, mesParams);
   }
 }
