@@ -6,12 +6,28 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include "fonctions.h"
+
+struct argsrec {
+  int socket;
+};
+
+void reception2(struct argsrec args){
+  ssize_t len = 0;
+  ssize_t rcv_len = recv(args.socket, &len, sizeof(len), 0) ;
+  if (rcv_len == -1){perror("Erreur réception taille message");}
+  printf("%d\n",(int)len);
+  char * msg = (char *) malloc((len)*sizeof(char));
+  ssize_t rcv = recv(args.socket, msg, len, 0) ;
+  if (rcv == -1){perror("Erreur réception message");}
+  printf("Message reçu : %s\n", msg);
+}
 
 int main(int argc, char *argv[]) {
 
-  if(argc != 4){
-    printf("lancement : ./client IPServeur port numéroClient\n");
+  if(argc != 3){
+    printf("lancement : ./client IPServeur port\n");
     exit(1);
   }
 
@@ -28,29 +44,31 @@ int main(int argc, char *argv[]) {
   aS.sin_family = AF_INET;
   inet_pton(AF_INET,argv[1],&(aS.sin_addr)) ;
   aS.sin_port = htons(atoi(argv[2])) ;
-  socklen_t lgA = sizeof(struct sockaddr_in) ;
-  int num = atoi(argv[3]);
-  if (num != 1 && num != 2) {
-    perror("Argument numéro client invalide");
-    exit(0);
-  }
+  socklen_t lgA = sizeof(struct sockaddr_in);
+
   int co = connect(dS, (struct sockaddr *) &aS, lgA) ;
   if (co == -1){
     perror("Erreur envoi demmande de connexion");
     exit(0);}
   printf("Socket Connecté\n");
 
+  pthread_t f;
+
+  struct argsrec argsf;
+
+  argsf.socket = dS;
+  
+  int thread = pthread_create(&f,NULL,&reception2,&argsf);
+
+  if (thread == 0) {
+    perror("Erreur de création de thread");
+    exit(0);
+  }
 
   while(1){
-    if (num == 1) {
-      envoi(dS);
-      reception(dS);
-    }
-    else {
-      reception(dS);
-      envoi(dS);
-    }
+    envoi(dS);
   }
+
   int sd = shutdown(dS,2) ;
   if (sd == -1){perror("Erreur shutdown");}
   printf("Fin du programme");
