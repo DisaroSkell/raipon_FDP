@@ -7,7 +7,38 @@
 #include <string.h>
 #include <pthread.h>
 #include "fonctions.h"
-//Ajouter le fonctions.c dans la compilation
+
+int * clients = (int*) malloc(100*sizeof(int));
+
+void* traitement_serveur(int dSC){
+    size_t len = 0;
+    printf("hhhhhhhhhhhhhh = %d", dSC);
+    ssize_t rcv_len = recv(dSC, &len, sizeof(len), 0) ;
+    if (rcv_len == -1){perror("Erreur réception taille message");}
+    printf("%d\n",(int)len);
+    char * msg = (char *) malloc((len)*sizeof(char));
+    ssize_t rcv = recv(dSC, msg, len, 0) ;
+    if (rcv == -1){perror("Erreur réception message");}
+    printf("Message reçu : %s\n", msg) ;
+
+    int end = strcmp(msg, "fin\n");
+
+    if (end == 0) {
+        //pthread_exit(p.th);
+        printf("Fin du thread");
+    }
+    for(int i; i<=100; i++){
+        if (clients[i] != dSC) {
+          printf("clients = %d", clients[i]);
+            int snd2 = send(clients[i], &len, sizeof(len), 0) ;
+            if (snd2 == -1){perror("Erreur envoi taille message");}
+            int snd = send(clients[i], msg, len , 0) ;
+            if (snd == -1){perror("Erreur envoi message");}
+            printf("Message Envoyé\n");
+        }
+    }
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -43,16 +74,9 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in aC ;
   socklen_t lg = sizeof(struct sockaddr_in) ;
 
-  pthread_t t[];
-  int clients[];
-  i = 0;
-  c = 0;
-
-  struct params {
-    int dS;
-    int origin;
-    int destinataires;
-  }
+  pthread_t t[100];
+  int i = 0;
+  int c = 0;
 
 
   while(1){
@@ -65,11 +89,12 @@ int main(int argc, char *argv[]) {
     pthread_t new;
     t[i] = new;
     clients[c]=dSC;
+    printf("clients[0] = %d", clients[0]);
 
-    struct params mesParams;
-    mesParams.dS = dS;
-    mesParams.origin = dSC;
-    mesParams.destinataires = clients[];
-    pthread_create(&t[i], NULL, &traitement_serveur, mesParams);
+    int thread = pthread_create(&t[i], NULL, traitement_serveur, dSC);
+    if (thread != 0){
+      perror("Erreur création thread");
+    }
+
   }
 }
