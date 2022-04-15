@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   
   int thread = pthread_create(&idt,NULL,reception2,&argsf);
 
-  if (thread == 0) {
+  if (thread != 0) {
     perror("Erreur de création de thread");
     exit(0);
   }
@@ -69,6 +69,8 @@ int main(int argc, char *argv[]) {
   while(1){
     envoi(dS);
   }
+
+  pthread_join(idt,NULL);
 
   int sd = shutdown(dS,2) ;
   if (sd == -1){perror("Erreur shutdown");}
