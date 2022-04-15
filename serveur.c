@@ -18,7 +18,7 @@ void* traitement_serveur(void * paramspointer){
   struct traitement_params * params = paramspointer;
 
   size_t len = 0;
-  printf("hhhhhhhhhhhhhh = %d", params->socket);
+  printf("Serv socket = %d", params->socket);
   ssize_t rcv_len = recv(params->socket, &len, sizeof(len), 0) ;
   if (rcv_len == -1){perror("Erreur réception taille message");}
   printf("%d\n",(int)len);
