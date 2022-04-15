@@ -8,41 +8,54 @@
 #include <pthread.h>
 #include "fonctions.h"
 
-int * clients = (int*) malloc(100*sizeof(int));
+struct traitement_params {
+  int socket;
+  int * clienttab;
+};
 
-void* traitement_serveur(int dSC){
-    size_t len = 0;
-    printf("hhhhhhhhhhhhhh = %d", dSC);
-    ssize_t rcv_len = recv(dSC, &len, sizeof(len), 0) ;
-    if (rcv_len == -1){perror("Erreur réception taille message");}
-    printf("%d\n",(int)len);
-    char * msg = (char *) malloc((len)*sizeof(char));
-    ssize_t rcv = recv(dSC, msg, len, 0) ;
-    if (rcv == -1){perror("Erreur réception message");}
-    printf("Message reçu : %s\n", msg) ;
+void* traitement_serveur(void * paramspointer){
 
-    int end = strcmp(msg, "fin\n");
+  struct traitement_params * params = paramspointer;
 
-    if (end == 0) {
-        //pthread_exit(p.th);
-        printf("Fin du thread");
+  size_t len = 0;
+  printf("hhhhhhhhhhhhhh = %d", params->socket);
+  ssize_t rcv_len = recv(params->socket, &len, sizeof(len), 0) ;
+  if (rcv_len == -1){perror("Erreur réception taille message");}
+  printf("%d\n",(int)len);
+  char * msg = (char *) malloc((len)*sizeof(char));
+  ssize_t rcv = recv(params->socket, msg, len, 0) ;
+  if (rcv == -1){perror("Erreur réception message");}
+  printf("Message reçu : %s\n", msg) ;
+
+  int end = strcmp(msg, "fin\n");
+
+  if (end == 0) {
+    //pthread_exit(p.th);
+    printf("Fin du thread");
+  }
+  for(int i; i<=100; i++){
+    if (params->clienttab[i] != params->socket) {
+      printf("clients = %d", params->clienttab[i]);
+      int snd2 = send(params->clienttab[i], &len, sizeof(len), 0) ;
+      if (snd2 == -1){perror("Erreur envoi taille message");}
+      int snd = send(params->clienttab[i], msg, len , 0) ;
+      if (snd == -1){perror("Erreur envoi message");}
+      printf("Message Envoyé\n");
     }
-    for(int i; i<=100; i++){
-        if (clients[i] != dSC) {
-          printf("clients = %d", clients[i]);
-            int snd2 = send(clients[i], &len, sizeof(len), 0) ;
-            if (snd2 == -1){perror("Erreur envoi taille message");}
-            int snd = send(clients[i], msg, len , 0) ;
-            if (snd == -1){perror("Erreur envoi message");}
-            printf("Message Envoyé\n");
-        }
-    }
+  }
 }
 
 
 int main(int argc, char *argv[]) {
 
+  if(argc != 2){
+    printf("lancement : ./serveur port\n");
+    exit(1);
+  }
+
   printf("Début programme\n");
+  
+  int * clients = (int*) malloc(100*sizeof(int));
 
   int dS = socket(PF_INET, SOCK_STREAM, 0);
   if (dS == -1){
@@ -50,7 +63,6 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   printf("Socket Créé\n");
-
 
   struct sockaddr_in ad;
   ad.sin_family = AF_INET;
@@ -81,9 +93,14 @@ int main(int argc, char *argv[]) {
 
   while(1){
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
+
+    struct traitement_params params;
+    params.socket = dS;
+    params.clienttab = clients;
+
     if (dSC == -1){
-    perror("Erreur connexion non acceptée");
-    exit(0);
+      perror("Erreur connexion non acceptée");
+      exit(0);
     }
     printf("Client Connecté\n");
     pthread_t new;
@@ -91,10 +108,9 @@ int main(int argc, char *argv[]) {
     clients[c]=dSC;
     printf("clients[0] = %d", clients[0]);
 
-    int thread = pthread_create(&t[i], NULL, traitement_serveur, dSC);
+    int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){
       perror("Erreur création thread");
     }
-
   }
 }
