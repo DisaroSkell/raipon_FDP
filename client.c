@@ -13,13 +13,14 @@ struct argsrec {
   int socket;
 };
 
-void reception2(struct argsrec args){
+void * reception2(void * argpointer){
+  struct argsrec * args = argpointer;
   ssize_t len = 0;
-  ssize_t rcv_len = recv(args.socket, &len, sizeof(len), 0) ;
+  ssize_t rcv_len = recv(args->socket, &len, sizeof(len), 0) ;
   if (rcv_len == -1){perror("Erreur réception taille message");}
   printf("%d\n",(int)len);
   char * msg = (char *) malloc((len)*sizeof(char));
-  ssize_t rcv = recv(args.socket, msg, len, 0) ;
+  ssize_t rcv = recv(args->socket, msg, len, 0) ;
   if (rcv == -1){perror("Erreur réception message");}
   printf("Message reçu : %s\n", msg);
 }
@@ -52,13 +53,13 @@ int main(int argc, char *argv[]) {
     exit(0);}
   printf("Socket Connecté\n");
 
-  pthread_t f;
+  pthread_t idt;
 
   struct argsrec argsf;
 
   argsf.socket = dS;
   
-  int thread = pthread_create(&f,NULL,&reception2,&argsf);
+  int thread = pthread_create(&idt,NULL,reception2,&argsf);
 
   if (thread == 0) {
     perror("Erreur de création de thread");
