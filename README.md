@@ -7,9 +7,9 @@ Codé par Louis VAN DER PUTTE, Anaëlle Danton et Alma Sorrentino
 
 ## Compilation de l'application
 
-Pour compiler le fichier client : gcc -o client.c fonction.c
+Pour compiler le fichier client : gcc -o client client.c fonction.c -lpthread
 
-Pour compiler le fichier serveur : gcc -o serveur.c fonction.c
+Pour compiler le fichier serveur : gcc -o serveur serveur.c fonction.c -lpthread
 
 ## Lancement de l'application
 
