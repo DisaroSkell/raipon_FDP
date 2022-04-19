@@ -14,7 +14,7 @@ void * reception(void * argpointer){
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
             printf("Non connecté au serveur, fin du thread\n");
-            pthread_exit(0);
+            exit(0);
         }
 
         char * msg = (char *) malloc((len)*sizeof(char));
@@ -22,7 +22,7 @@ void * reception(void * argpointer){
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
             printf("Non connecté au serveur, fin du thread\n");
-            pthread_exit(0);
+            exit(0);
         }
 
         printf("Message reçu : %s\n", msg);
