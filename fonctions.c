@@ -12,9 +12,19 @@ void * reception(void * argpointer){
         ssize_t len = 0;
         ssize_t rcv_len = recv(args->socket, &len, sizeof(len), 0);
         if (rcv_len == -1) perror("Erreur réception taille message");
+        if (rcv_len == 0) {
+            printf("Non connecté au serveur, fin du thread\n");
+            pthread_exit(0);
+        }
+
         char * msg = (char *) malloc((len)*sizeof(char));
         ssize_t rcv = recv(args->socket, msg, len, 0);
         if (rcv == -1) perror("Erreur réception message");
+        if (rcv == 0) {
+            printf("Non connecté au serveur, fin du thread\n");
+            pthread_exit(0);
+        }
+
         printf("Message reçu : %s\n", msg);
     }
 }
@@ -23,12 +33,15 @@ int envoi(int dS) {
     printf("Entrez un message\n");
     char * m = (char *) malloc(30*sizeof(char));
     fgets( m, 30*sizeof(char), stdin );
+
     size_t len= strlen(m)+1;
     int snd2 = send(dS, &len, sizeof(len), 0);
     if (snd2 == -1) perror("Erreur envoi taille message");
+
     int snd = send(dS, m, len , 0);
     if (snd == -1) perror("Erreur envoi message");
     printf("Message Envoyé \n");
+
     return strcmp(m, "fin\n") != 0;
 }
 
@@ -43,11 +56,19 @@ void* traitement_serveur(void * paramspointer){
     while (1) {
         ssize_t rcv_len = recv(params->clienttab[numclient], &len, sizeof(len), 0);
         if (rcv_len == -1) perror("Erreur réception taille message");
+        if (rcv_len == 0) {
+            printf("Non connecté au client, fin du thread\n");
+            pthread_exit(0);
+        }
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
 
         char * msg = (char *) malloc((len)*sizeof(char));
         ssize_t rcv = recv(params->clienttab[numclient], msg, len, 0);
         if (rcv == -1) perror("Erreur réception message");
+        if (rcv == 0) {
+            printf("Non connecté au client, fin du thread\n");
+            pthread_exit(0);
+        }
         else {
             printf("%d: Message reçu : %s\n", numclient, msg);
         }
@@ -63,7 +84,7 @@ void* traitement_serveur(void * paramspointer){
             pthread_exit(0);
         }
 
-        for(int i=0; i<=100; i++){
+        for(int i = 0; i<=100; i++){
             if (params->clienttab[i] != params->clienttab[numclient] && params->clienttab[i] != 0) {
                 printf("%d: client = %d\n", numclient, params->clienttab[i]);
                 int snd2 = send(params->clienttab[i], &len, sizeof(len), 0);
