@@ -44,6 +44,7 @@ void* traitement_serveur(void * paramspointer){
         ssize_t rcv_len = recv(params->clienttab[numclient], &len, sizeof(len), 0);
         if (rcv_len == -1) perror("Erreur réception taille message");
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
+
         char * msg = (char *) malloc((len)*sizeof(char));
         ssize_t rcv = recv(params->clienttab[numclient], msg, len, 0);
         if (rcv == -1) perror("Erreur réception message");
@@ -62,7 +63,7 @@ void* traitement_serveur(void * paramspointer){
             pthread_exit(0);
         }
 
-        for(int i; i<=100; i++){
+        for(int i=0; i<=100; i++){
             if (params->clienttab[i] != params->clienttab[numclient] && params->clienttab[i] != 0) {
                 printf("%d: client = %d\n", numclient, params->clienttab[i]);
                 int snd2 = send(params->clienttab[i], &len, sizeof(len), 0);
@@ -72,5 +73,6 @@ void* traitement_serveur(void * paramspointer){
                 printf("%d: Message Envoyé au client %d: %s\n", numclient, params->clienttab[i], msg);
             }
         }
+        free(msg);
     }
 }
