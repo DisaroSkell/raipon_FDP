@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include "fonctions.h"
 
+extern client clients[nb_client_max];
+
 int main(int argc, char *argv[]) {
 
   if(argc != 2){
@@ -17,19 +19,13 @@ int main(int argc, char *argv[]) {
 
   printf("Début programme\n");
 
-  // Pas bon, faudrait en créer un nouveau à chaque fois
-
-  struct client (*clients)[nb_client_max];
-
-  struct client init;
+  client init;
   init.socket = 0;
   init.pseudo = "";
 
   for (int i = 0; i < nb_client_max; i++) {
-    (*clients)[i] = init;
+    clients[i] = init;
   }
-
-  // ---------------------------------------------
 
   int dS = socket(PF_INET, SOCK_STREAM, 0);
   if (dS == -1){
@@ -67,9 +63,8 @@ int main(int argc, char *argv[]) {
   while(i < nb_client_max){
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
 
-    struct traitement_params params;
+    traitement_params params;
     params.numclient = i;
-    params.clienttab = clients;
 
     if (dSC == -1){
       perror("Erreur connexion non acceptée");
@@ -83,9 +78,9 @@ int main(int argc, char *argv[]) {
 
     pthread_t new;
     t[i] = new;
-    clients[i]->socket = dSC;
-    clients[i]->pseudo = pseudo;
-    printf("clients[%d] = %d\n", i, clients[i]->socket);
+    clients[i].socket = dSC;
+    clients[i].pseudo = pseudo;
+    printf("clients[%d] = %d\n", i, clients[i].socket);
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){

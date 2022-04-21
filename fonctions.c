@@ -6,8 +6,10 @@
 #include <pthread.h>
 #include "fonctions.h"
 
+client clients[nb_client_max];
+
 void * reception(void * argpointer){
-    struct argsrec * args = argpointer;
+    argsrec * args = argpointer;
     while(!(args->fin)) {
         ssize_t len = 0;
         ssize_t rcv_len = recv(args->socket, &len, sizeof(len), 0);
@@ -49,14 +51,14 @@ int envoi(int dS) {
 
 void* traitement_serveur(void * paramspointer){
 
-    struct traitement_params * params = paramspointer;
+    traitement_params * params = paramspointer;
 
     int numclient = params->numclient;
 
     size_t len = 0;
-    printf("%d: Client socket = %d\n", numclient, params->clienttab[numclient]->socket);
+    printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
-        ssize_t rcv_len = recv(params->clienttab[numclient]->socket, &len, sizeof(len), 0);
+        ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
             printf("Non connecté au client, fin du thread\n");
@@ -65,7 +67,7 @@ void* traitement_serveur(void * paramspointer){
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
 
         char * msg = (char *) malloc((len)*sizeof(char));
-        ssize_t rcv = recv(params->clienttab[numclient]->socket, msg, len, 0);
+        ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
             printf("Non connecté au client, fin du thread\n");
@@ -80,35 +82,24 @@ void* traitement_serveur(void * paramspointer){
         if (end == 0) {
             char * messagedeco = "Déconnexion en cours...\n";
             int tailledeco = strlen(messagedeco);
-            int senddecotaille = send(params->clienttab[numclient]->socket, &tailledeco, sizeof(tailledeco), 0);
-            int senddeco = send(params->clienttab[numclient]->socket, messagedeco, tailledeco, 0);
+            int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
+            int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
             printf("%d: Fin du thread\n", numclient);
             pthread_exit(0);
         }
 
-        struct commande cmd = gestion_commande(msg);
+        commande cmd = gestion_commande(msg);
 
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) {
-            for(int i = 0; i<=100; i++){
-                if (strcmp(params->clienttab[i]->pseudo, cmd.user) == 0) {
-                    printf("%d: client = %d\n", numclient, params->clienttab[i]->socket);
-                    int taille = strlen(cmd.message);
-                    int snd2 = send(params->clienttab[i]->socket, &taille, sizeof(size_t), 0);
-                    if (snd2 == -1) perror("Erreur envoi taille message");
-                    int snd = send(params->clienttab[i]->socket, cmd.message, strlen(cmd.message), 0);
-                    if (snd == -1) perror("Erreur envoi message");
-                    printf("%d: Message Envoyé au client %d: %s\n", numclient, params->clienttab[i]->socket, cmd.message);
+            for(int i = 0; i < nb_client_max; i++){
+                if (strcmp(clients[i].pseudo, cmd.user) == 0) {
+                    envoi_serveur(numclient, i, cmd.message);
                 }
             }
         } else {
-            for(int i = 0; i<=100; i++){
-                if (params->clienttab[i]->socket != params->clienttab[numclient]->socket && params->clienttab[i]->socket != 0) {
-                    printf("%d: client = %d\n", numclient, params->clienttab[i]->socket);
-                    int snd2 = send(params->clienttab[i]->socket, &len, sizeof(len), 0);
-                    if (snd2 == -1) perror("Erreur envoi taille message");
-                    int snd = send(params->clienttab[i]->socket, msg, len, 0);
-                    if (snd == -1) perror("Erreur envoi message");
-                    printf("%d: Message Envoyé au client %d: %s\n", numclient, params->clienttab[i]->socket, msg);
+            for(int i = 0; i < nb_client_max; i++){
+                if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
+                    envoi_serveur(numclient, i, msg);
                 }
             }
         }
@@ -116,8 +107,23 @@ void* traitement_serveur(void * paramspointer){
     }
 }
 
-struct commande gestion_commande(char * slashmsg) {
-    struct commande result;
+void envoi_serveur(int numclient, int numreceveur, char * msg) {
+    printf("%d: client = %d\n", numclient, clients[numreceveur].socket);
+
+    int len = strlen(msg);
+
+    int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
+    if (sndlen == -1) perror("Erreur envoi taille message");
+    else {
+        int sndmsg = send(clients[numreceveur].socket, msg, len, 0);
+        if (sndmsg == -1) perror("Erreur envoi message");
+        
+        printf("%d: Message Envoyé au client %d (%s): %s\n", numclient, clients[numreceveur].socket, clients[numreceveur].pseudo, msg);
+    }
+}
+
+commande gestion_commande(char * slashmsg) {
+    commande result;
     result.id_op = 0;
     result.nom_cmd = "";
     result.message = "";

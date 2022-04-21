@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
 
   struct sockaddr_in aS;
   aS.sin_family = AF_INET;
-  inet_pton(AF_INET,argv[1],&(aS.sin_addr));
-  aS.sin_port = htons(atoi(argv[2]));
+  inet_pton(AF_INET,argv[2],&(aS.sin_addr));
+  aS.sin_port = htons(atoi(argv[3]));
   socklen_t lgA = sizeof(struct sockaddr_in);
 
   int co = connect(dS, (struct sockaddr *) &aS, lgA);
@@ -45,11 +45,11 @@ int main(int argc, char *argv[]) {
   // Envoi du pseudo au serveur
   int snd = send(dS, argv[1], taille_pseudo, 0);
   if (snd == -1) perror("Erreur envoi pseudo au serveur");
-  else printf("Message Envoyé \n");
+  else printf("Pseudo envoyé au serveur\n");
 
   pthread_t idt;
 
-  struct argsrec argsf;
+  argsrec argsf;
 
   argsf.socket = dS;
   argsf.fin = 0;
