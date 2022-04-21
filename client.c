@@ -10,8 +10,13 @@
 
 int main(int argc, char *argv[]) {
 
-  if(argc != 3){
-    printf("lancement : ./client IPServeur port\n");
+  if(argc != 4){
+    printf("lancement : ./client Pseudo IPServeur port\n");
+    exit(1);
+  }
+
+  if(strlen(argv[1]) >= taille_pseudo) {
+    printf("Pseudo trop long, entrez un pseudo de moins de %d caractères.\n", taille_pseudo);
     exit(1);
   }
 
@@ -36,6 +41,11 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   printf("Socket Connecté\n");
+
+  // Envoi du pseudo au serveur
+  int snd = send(dS, argv[1], taille_pseudo, 0);
+  if (snd == -1) perror("Erreur envoi pseudo au serveur");
+  else printf("Message Envoyé \n");
 
   pthread_t idt;
 

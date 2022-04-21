@@ -13,6 +13,6 @@ Pour compiler le fichier serveur : gcc -o serveur serveur.c fonctions.c -lpthrea
 
 ## Lancement de l'application
 
-Pour lancer le fichier client : ./client [IPServeur] [port] [numéroClient]
+Pour lancer le fichier client : ./client [Pseudonyme] [IPServeur] [port]
 
 Pour lancer le fichier serveur : ./serveur [port]

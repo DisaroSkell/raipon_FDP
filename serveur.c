@@ -16,8 +16,20 @@ int main(int argc, char *argv[]) {
   }
 
   printf("Début programme\n");
-  
-  int * clients = (int*) malloc(100*sizeof(int));
+
+  // Pas bon, faudrait en créer un nouveau à chaque fois
+
+  struct client (*clients)[nb_client_max];
+
+  struct client init;
+  init.socket = 0;
+  init.pseudo = "";
+
+  for (int i = 0; i < nb_client_max; i++) {
+    (*clients)[i] = init;
+  }
+
+  // ---------------------------------------------
 
   int dS = socket(PF_INET, SOCK_STREAM, 0);
   if (dS == -1){
@@ -48,11 +60,11 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in aC;
   socklen_t lg = sizeof(struct sockaddr_in);
 
-  pthread_t t[100];
+  pthread_t t[nb_client_max];
   int i = 0; // Compteur de client
 
 
-  while(i < 100){
+  while(i < nb_client_max){
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
 
     struct traitement_params params;
@@ -63,11 +75,17 @@ int main(int argc, char *argv[]) {
       perror("Erreur connexion non acceptée");
       exit(0);
     }
-    printf("Client %d Connecté\n", i);
+
+    char * pseudo = (char*) malloc(taille_pseudo*sizeof(char));
+    ssize_t rcv_pseudo = recv(dSC, pseudo, taille_pseudo, 0);
+    if (rcv_pseudo == -1) perror("Erreur réception taille message");
+    else printf("%s s'est connecté !\n", pseudo);
+
     pthread_t new;
     t[i] = new;
-    clients[i]=dSC;
-    printf("clients[%d] = %d\n", i, clients[i]);
+    clients[i]->socket = dSC;
+    clients[i]->pseudo = pseudo;
+    printf("clients[%d] = %d\n", i, clients[i]->socket);
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){
