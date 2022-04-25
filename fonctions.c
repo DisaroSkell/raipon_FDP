@@ -10,25 +10,29 @@ client clients[nb_client_max];
 
 void * reception(void * argpointer){
     argsrec * args = argpointer;
+    ssize_t len = 0;
     while(!(args->fin)) {
-        ssize_t len = 0;
         ssize_t rcv_len = recv(args->socket, &len, sizeof(len), 0);
-        if (rcv_len == -1) perror("Erreur réception taille message");
-        else {
-            if (rcv_len == 0) {
-                printf("Non connecté au serveur, fin du thread\n");
-                exit(0);
-            }
-
-            char * msg = (char *) malloc((len)*sizeof(char));
-            ssize_t rcv = recv(args->socket, msg, len, 0);
-            if (rcv == -1) perror("Erreur réception message");
-            else if (rcv == 0) {
-                printf("Non connecté au serveur, fin du thread\n");
-                exit(0);
-            }
-            else printf("Message reçu : %s\n", msg);
+        if (rcv_len == -1) {
+            perror("Erreur réception taille message");
+            exit(0);
         }
+        if (rcv_len == 0) {
+            printf("Non connecté au serveur, fin du thread\n");
+            exit(0);
+        }
+
+        char * msg = (char *) malloc((len)*sizeof(char));
+        ssize_t rcv = recv(args->socket, msg, len, 0);
+        if (rcv == -1) {
+            perror("Erreur réception message");
+            exit(0);
+        }
+        if (rcv == 0) {
+            printf("Non connecté au serveur, fin du thread\n");
+            exit(0);
+        }
+        else printf("Message reçu : %s\n", msg);
     }
 }
 
@@ -110,7 +114,7 @@ void* traitement_serveur(void * paramspointer){
 void envoi_serveur(int numclient, int numreceveur, char * msg) {
     printf("%d: client = %d\n", numclient, clients[numreceveur].socket);
 
-    int len = strlen(msg);
+    ssize_t len = strlen(msg)+1;
 
     int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
     if (sndlen == -1) perror("Erreur envoi taille message");
