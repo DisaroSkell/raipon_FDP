@@ -10,7 +10,7 @@
 #include <semaphore.h>
 
 extern client clients[nb_client_max];
-sem_t semaphore;
+extern sem_t semaphore;
 
 int main(int argc, char *argv[]) {
 
@@ -22,10 +22,7 @@ int main(int argc, char *argv[]) {
   printf("Début programme\n");
 
   client init;
-  int init_semaphore sem_init(&semaphore, PTHREAD_PROCESS_SHARED, 3);
-  if (init_semaphore == -1) {
-    perror("Erreur dans la création de la sémaphore");
-  }
+  if (sem_init(&semaphore, PTHREAD_PROCESS_SHARED, 3) == -1) perror("Erreur dans la création de la sémaphore");
   init.socket = 0;
   init.pseudo = "";
 
@@ -66,7 +63,9 @@ int main(int argc, char *argv[]) {
   int i = 0; // Compteur de client
 
 
-  while(i < nb_client_max){
+  while(1){
+    if (sem_wait(&semaphore) == -1) perror("Erreur blocage sémaphore");
+
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
 
     traitement_params params;
@@ -103,4 +102,5 @@ int main(int argc, char *argv[]) {
     i++;
   }
   printf("Trop de client, arrêt du programme.");
+  sem_destroy(&semaphore);
 }

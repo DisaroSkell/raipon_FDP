@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   printf("Socket Connecté\n");
+  printf("Connexion au serveur...\n");
 
   ssize_t len = 30;
   char * msg = (char *) malloc((len)*sizeof(char));

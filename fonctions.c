@@ -5,8 +5,10 @@
 #include <string.h>
 #include <pthread.h>
 #include "fonctions.h"
+#include <semaphore.h>
 
 client clients[nb_client_max];
+sem_t semaphore;
 
 void * reception(void * argpointer){
     argsrec * args = argpointer;
@@ -66,6 +68,7 @@ void* traitement_serveur(void * paramspointer){
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
             printf("Non connecté au client, fin du thread\n");
+            sem_post(&semaphore);
             pthread_exit(0);
         }
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
@@ -75,6 +78,7 @@ void* traitement_serveur(void * paramspointer){
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
             printf("Non connecté au client, fin du thread\n");
+            sem_post(&semaphore);
             pthread_exit(0);
         }
         else {
@@ -89,6 +93,7 @@ void* traitement_serveur(void * paramspointer){
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
             int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
             printf("%d: Fin du thread\n", numclient);
+            sem_post(&semaphore);
             pthread_exit(0);
         }
 
