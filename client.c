@@ -42,6 +42,16 @@ int main(int argc, char *argv[]) {
   }
   printf("Socket Connecté\n");
 
+  ssize_t len = 30;
+  char * msg = (char *) malloc((len)*sizeof(char));
+  ssize_t rcv = recv(dS, msg, len, 0);
+  if (rcv == -1) perror("Erreur réception message de bienvenue");
+    else if (rcv == 0) {
+      printf("Non connecté au serveur, fin du thread\n");
+      exit(0);
+    }
+  else printf("%s\n", msg);
+
   // Envoi du pseudo au serveur
   int snd = send(dS, argv[1], taille_pseudo, 0);
   if (snd == -1) perror("Erreur envoi pseudo au serveur");

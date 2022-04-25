@@ -7,8 +7,10 @@
 #include <string.h>
 #include <pthread.h>
 #include "fonctions.h"
+#include <semaphore.h>
 
 extern client clients[nb_client_max];
+sem_t semaphore;
 
 int main(int argc, char *argv[]) {
 
@@ -20,6 +22,10 @@ int main(int argc, char *argv[]) {
   printf("Début programme\n");
 
   client init;
+  int init_semaphore sem_init(&semaphore, PTHREAD_PROCESS_SHARED, 3);
+  if (init_semaphore == -1) {
+    perror("Erreur dans la création de la sémaphore");
+  }
   init.socket = 0;
   init.pseudo = "";
 
@@ -70,6 +76,13 @@ int main(int argc, char *argv[]) {
       perror("Erreur connexion non acceptée");
       exit(0);
     }
+    size_t len = 30;
+    char * msg = (char *) malloc((len)*sizeof(char));
+    strcpy(msg, "Bienvenue sur le serveur !\n");
+    int sndmsg = send(dSC, msg, len, 0);
+    if (sndmsg == -1) perror("Erreur envoi message bienvenue");
+        
+    printf("Message de bienvenue envoyé au client %d\n", dSC);
 
     char * pseudo = (char*) malloc(taille_pseudo*sizeof(char));
     ssize_t rcv_pseudo = recv(dSC, pseudo, taille_pseudo, 0);
