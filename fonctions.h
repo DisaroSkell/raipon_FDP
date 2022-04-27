@@ -27,4 +27,5 @@ void * reception(void * argpointer);
 int envoi(int dS);
 void * traitement_serveur(void * paramspointer);
 void envoi_serveur(int numclient, int numreceveur, char * msg);
+int chercher_client(char * pseudo);
 commande gestion_commande(char * msg);

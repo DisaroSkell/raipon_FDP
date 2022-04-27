@@ -88,10 +88,11 @@ void* traitement_serveur(void * paramspointer){
         commande cmd = gestion_commande(msg);
 
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) {
-            for(int i = 0; i < nb_client_max; i++){
-                if (strcmp(clients[i].pseudo, cmd.user) == 0) {
-                    envoi_serveur(numclient, i, cmd.message);
-                }
+            int destinataire = chercher_client(cmd.user);
+            if (destinataire == -1) {
+                printf("Destinataire non trouvé !\n");
+            } else {
+                envoi_serveur(numclient, destinataire, cmd.message);
             }
         } 
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
@@ -105,7 +106,7 @@ void* traitement_serveur(void * paramspointer){
         } else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
-                    envoi_serveur(numclient, i, msg);
+                    envoi_serveur(numclient, clients[i].socket, msg);
                 }
             }
         }
@@ -126,6 +127,24 @@ void envoi_serveur(int numclient, int numreceveur, char * msg) {
         
         printf("%d: Message Envoyé au client %d (%s): %s\n", numclient, clients[numreceveur].socket, clients[numreceveur].pseudo, msg);
     }
+}
+
+// Cette fonction cherche un client en fonction de son pseudo.
+// Renvoie -1 si non trouvé. Renvoie l'index dans le tableau clients sinon.
+int chercher_client(char * pseudo) {
+    int resultat = -1;
+
+    for(int i = 0; i < nb_client_max; i++){
+        if (strcmp(clients[i].pseudo, pseudo) == 0) {
+            if (resultat != -1) {
+                printf("Plusieurs personnes ont le même pseudo !\n");
+                return resultat;
+            }
+            resultat = i;
+        }
+    }
+
+    return resultat;
 }
 
 commande gestion_commande(char * slashmsg) {
