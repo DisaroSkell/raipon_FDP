@@ -52,7 +52,7 @@ int envoi(int dS) {
         else printf("Message Envoyé \n");
     }
 
-    return strcmp(m, "fin\n") != 0;
+    return strcmp(m, "/fin\n") != 0;
 }
 
 void* traitement_serveur(void * paramspointer){
@@ -85,18 +85,6 @@ void* traitement_serveur(void * paramspointer){
             printf("%d: Message reçu : %s\n", numclient, msg);
         }
 
-        int end = strcmp(msg, "fin\n");
-
-        if (end == 0) {
-            char * messagedeco = "Déconnexion en cours...\n";
-            int tailledeco = strlen(messagedeco);
-            int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
-            int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
-            printf("%d: Fin du thread\n", numclient);
-            sem_post(&semaphore);
-            pthread_exit(0);
-        }
-
         commande cmd = gestion_commande(msg);
 
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) {
@@ -106,7 +94,7 @@ void* traitement_serveur(void * paramspointer){
                 }
             }
         } 
-        if (cmd.id_op == 2 && strcmp(cmd.nom_cmd, "fin") == 0) {
+        if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
             char * messagedeco = "Déconnexion en cours...\n";
             int tailledeco = strlen(messagedeco);
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
@@ -205,15 +193,13 @@ commande gestion_commande(char * slashmsg) {
             result.message = (char *) malloc(strlen(mp)*sizeof(char));
             result.message = mp;
         } 
-        else {
-            if (strcmp(cmd,"fin") == 0) {
-                result.id_op = 2;
-                result.nom_cmd = (char *) malloc(strlen("mp")*sizeof(char));
-                strcpy(result.nom_cmd, "fin");
-            } else {
-                perror("Commande non reconnue");
-                return result;
-            }
+        else if (strcmp(cmd,"fin\n") == 0) {
+            result.id_op = 1;
+            result.nom_cmd = (char *) malloc(strlen("fin")*sizeof(char));
+            strcpy(result.nom_cmd, "fin");
+        } else {
+            perror("Commande non reconnue");
+            return result;
         }
     }
     return result;
