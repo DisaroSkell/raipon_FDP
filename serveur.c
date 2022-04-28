@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include "fonctions.h"
 #include <semaphore.h>
+#include <signal.h>
 
 extern client clients[nb_client_max];
 extern sem_t semaphore;

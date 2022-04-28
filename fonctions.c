@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include "fonctions.h"
 #include <semaphore.h>
+#include <signal.h>
 
 client clients[nb_client_max];
 sem_t semaphore;
@@ -323,4 +324,10 @@ commande gestion_commande(char * slashmsg) {
         }
     }
     return result;
+}
+
+void sigint_handle(int singnal){
+    if(signal == SIGINT){
+        printf("sigint\n");
+    }
 }
