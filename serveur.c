@@ -75,18 +75,45 @@ int main(int argc, char *argv[]) {
       perror("Erreur connexion non acceptée");
       exit(0);
     }
+
+    char * pseudo = (char*) malloc(taille_pseudo*sizeof(char));
+    ssize_t rcv_pseudo = recv(dSC, pseudo, taille_pseudo, 0);
+    if (rcv_pseudo == -1) {
+      perror("Erreur réception pseudo");
+
+      size_t len = 30;
+      char * msg = (char *) malloc((len)*sizeof(char));
+      strcpy(msg, "Pseudo mal reçu.\n");
+      int sndmsg = send(dSC, msg, len, 0);
+      if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
+      else printf("Message d'erreur envoyé au client %d\n", dSC);
+
+      // On incrémente pas la sémaphore
+
+      continue; // On va à la prochaine boucle
+    }
+    else if (chercher_client(pseudo) != -1) {
+      perror("Pseudo déjà utilisé !");
+
+      size_t len = 30;
+      char * msg = (char *) malloc((len)*sizeof(char));
+      strcpy(msg, "Pseudo déjà utilisé.\n");
+      int sndmsg = send(dSC, msg, len, 0);
+      if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
+      else printf("Message d'erreur envoyé au client %d\n", dSC);
+
+      // On incrémente pas la sémaphore
+
+      continue; // On va à la prochaine boucle
+    }
+    else printf("%s s'est connecté !\n", pseudo);
+
     size_t len = 30;
     char * msg = (char *) malloc((len)*sizeof(char));
     strcpy(msg, "Bienvenue sur le serveur !\n");
     int sndmsg = send(dSC, msg, len, 0);
     if (sndmsg == -1) perror("Erreur envoi message bienvenue");
-        
-    printf("Message de bienvenue envoyé au client %d\n", dSC);
-
-    char * pseudo = (char*) malloc(taille_pseudo*sizeof(char));
-    ssize_t rcv_pseudo = recv(dSC, pseudo, taille_pseudo, 0);
-    if (rcv_pseudo == -1) perror("Erreur réception taille message");
-    else printf("%s s'est connecté !\n", pseudo);
+    else printf("Message de bienvenue envoyé au client %d\n", dSC);
 
     pthread_t new;
     t[i] = new;

@@ -41,22 +41,29 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   printf("Socket Connecté\n");
-  printf("Connexion au serveur...\n");
+
+  printf("Envoi du pseudo au serveur...\n");
+
+  int snd = send(dS, argv[1], taille_pseudo, 0);
+  if (snd == -1) perror("Erreur envoi pseudo au serveur");
+  else printf("Pseudo envoyé au serveur\n");
+
+  printf("Demande de connexion au serveur...\n");
 
   ssize_t len = 30;
   char * msg = (char *) malloc((len)*sizeof(char));
   ssize_t rcv = recv(dS, msg, len, 0);
   if (rcv == -1) perror("Erreur réception message de bienvenue");
-    else if (rcv == 0) {
-      printf("Non connecté au serveur, fin du thread\n");
-      exit(0);
-    }
+  else if (rcv == 0) {
+    printf("Non connecté au serveur, fin du thread\n");
+    exit(0);
+  }
   else printf("%s\n", msg);
 
-  // Envoi du pseudo au serveur
-  int snd = send(dS, argv[1], taille_pseudo, 0);
-  if (snd == -1) perror("Erreur envoi pseudo au serveur");
-  else printf("Pseudo envoyé au serveur\n");
+  // On arrête tout si c'est pas le message de bienvenu.
+  if (strcmp(msg, "Bienvenue sur le serveur !\n") != 0) {
+    exit(0);
+  }
 
   pthread_t idt;
 
