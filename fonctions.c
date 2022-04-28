@@ -105,6 +105,15 @@ void* traitement_serveur(void * paramspointer){
                     envoi_serveur(numclient, i, cmd.message);
                 }
             }
+        } 
+        if (cmd.id_op == 2 && strcmp(cmd.nom_cmd, "fin") == 0) {
+            char * messagedeco = "Déconnexion en cours...\n";
+            int tailledeco = strlen(messagedeco);
+            int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
+            int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
+            printf("%d: Fin du thread\n", numclient);
+            sem_post(&semaphore);
+            pthread_exit(0);
         } else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
@@ -157,7 +166,7 @@ commande gestion_commande(char * slashmsg) {
 
         char * cmd = (char *) malloc(strlen(token)*sizeof(char));
 
-        strcpy(cmd, token); // Le premier morceau est le nom de la commande
+        strcpy(cmd, token); // Le premier morceau est le nom de la commande  
 
         if (strcmp(cmd,"mp") == 0) {
             result.nom_cmd = (char *) malloc(strlen("mp")*sizeof(char));
@@ -195,9 +204,16 @@ commande gestion_commande(char * slashmsg) {
 
             result.message = (char *) malloc(strlen(mp)*sizeof(char));
             result.message = mp;
-        } else {
-            perror("Commande non reconnue");
-            return result;
+        } 
+        else {
+            if (strcmp(cmd,"fin") == 0) {
+                result.id_op = 2;
+                result.nom_cmd = (char *) malloc(strlen("mp")*sizeof(char));
+                strcpy(result.nom_cmd, "fin");
+            } else {
+                perror("Commande non reconnue");
+                return result;
+            }
         }
     }
     return result;
