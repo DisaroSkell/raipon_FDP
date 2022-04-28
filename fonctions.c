@@ -95,7 +95,7 @@ void* traitement_serveur(void * paramspointer){
                 envoi_serveur(numclient, destinataire, cmd.message);
             }
         } 
-        if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
             char * messagedeco = "Déconnexion en cours...\n";
             int tailledeco = strlen(messagedeco);
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
@@ -106,7 +106,7 @@ void* traitement_serveur(void * paramspointer){
         } else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
-                    envoi_serveur(numclient, clients[i].socket, msg);
+                    envoi_serveur(numclient, i, msg);
                 }
             }
         }
