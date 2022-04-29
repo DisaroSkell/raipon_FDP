@@ -13,7 +13,7 @@ sem_t semaphoreCli;
 
 void * reception(void * argpointer){
     argsrec * args = argpointer;
-    ssize_t len = 0;
+    int len = 0;
     while(!(args->fin)) {
         ssize_t rcv_len = recv(args->socket, &len, sizeof(len), 0);
         if (rcv_len == -1) {
@@ -35,7 +35,10 @@ void * reception(void * argpointer){
             printf("Non connecté au serveur, fin du thread\n");
             exit(0);
         }
-        else printf("Message reçu : %s\n", msg);
+        else {
+            printf("Message reçu :\n");
+            printf("%s\n", msg);
+        }
     }
 }
 
@@ -44,7 +47,7 @@ int envoi(int dS) {
     char * m = (char *) malloc(50*sizeof(char));
     fgets( m, 30*sizeof(char), stdin );
 
-    size_t len= strlen(m)+1;
+    int len= strlen(m)+1;
     int snd2 = send(dS, &len, sizeof(len), 0);
     if (snd2 == -1) perror("Erreur envoi taille message");
     else {
@@ -66,7 +69,7 @@ void* traitement_serveur(void * paramspointer){
     init.socket = 0;
     init.pseudo = "";
 
-    size_t len = 0;
+    int len = 0;
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
         ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
@@ -149,7 +152,7 @@ void* traitement_serveur(void * paramspointer){
 void envoi_serveur(int numclient, int numreceveur, char * msg) {
     printf("%d: client = %d\n", numclient, clients[numreceveur].socket);
 
-    ssize_t len = strlen(msg)+1;
+    int len = strlen(msg)+1;
 
     int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
     if (sndlen == -1) perror("Erreur envoi taille message");
