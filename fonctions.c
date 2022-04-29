@@ -105,19 +105,37 @@ void* traitement_serveur(void * paramspointer){
             } else {
                 envoi_serveur(numclient, destinataire, cmd.message);
             }
-        } 
+        }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
             char * messagedeco = "Déconnexion en cours...\n";
             int tailledeco = strlen(messagedeco);
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
+            if (senddecotaille == -1) perror("Erreur envoi taille deco");
             int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
+            if (senddeco == -1) perror("Erreur envoi deco");
             printf("%d: Fin du thread\n", numclient);
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
             clients[numclient] = init;
             sem_post(&semaphoreCli);
             sem_post(&semaphore);
             pthread_exit(0);
-        } else {
+        }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
+            char * temp = lire_manuel();
+            int taillemanuel = strlen(temp);
+
+            char * manuel = (char *) malloc(taillemanuel*sizeof(char));
+            strcpy(manuel, temp);
+
+            int sendmanueltaille = send(clients[numclient].socket, &taillemanuel, sizeof(taillemanuel), 0);
+            if (sendmanueltaille == -1) perror("Erreur envoi taille manuel");
+            else {
+                int sendmanuel = send(clients[numclient].socket, &manuel, taillemanuel, 0);
+                if (sendmanuel == -1) perror("Erreur envoi manuel");
+                else printf("Manuel envoyé\n");
+            }
+        }
+        else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
                     envoi_serveur(numclient, i, msg);
@@ -159,6 +177,31 @@ int chercher_client(char * pseudo) {
     }
 
     return resultat;
+}
+
+// Une partie du code de cette fonction a été trouvé sur ce site : https://www.codegrepper.com/code-examples/c/c+read+file+into+string
+char * lire_manuel() {
+    char * buffer = 0;
+    long length;
+    FILE * f = fopen ("manuel", "rb");
+
+    if (f) {
+        fseek (f, 0, SEEK_END);
+        length = ftell (f);
+        fseek (f, 0, SEEK_SET);
+        buffer = malloc (length);
+        if (buffer) {
+            fread (buffer, 1, length, f);
+        }
+        fclose (f);
+    }
+
+    if (buffer) {
+        return buffer;
+    }
+    else {
+        perror("Problème dans la lecture du fichier");
+    }
 }
 
 commande gestion_commande(char * slashmsg) {
@@ -225,12 +268,16 @@ commande gestion_commande(char * slashmsg) {
 
             result.message = (char *) malloc(strlen(mp)*sizeof(char));
             result.message = mp;
-        } 
+        }
         else if (strcmp(cmd,"fin\n") == 0) {
-            result.id_op = 1;
             result.nom_cmd = (char *) malloc(strlen("fin")*sizeof(char));
             strcpy(result.nom_cmd, "fin");
-        } else {
+        }
+        else if (strcmp(cmd,"manuel\n") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("manuel")*sizeof(char));
+            strcpy(result.nom_cmd, "manuel");
+        }
+        else {
             perror("Commande non reconnue");
             return result;
         }
