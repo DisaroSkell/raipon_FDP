@@ -11,6 +11,7 @@
 
 extern client clients[nb_client_max];
 extern sem_t semaphore;
+extern sem_t semaphoreCli;
 
 int main(int argc, char *argv[]) {
 
@@ -22,7 +23,8 @@ int main(int argc, char *argv[]) {
   printf("Début programme\n");
 
   client init;
-  if (sem_init(&semaphore, PTHREAD_PROCESS_SHARED, 3) == -1) perror("Erreur dans la création de la sémaphore");
+  if (sem_init(&semaphore, PTHREAD_PROCESS_SHARED, nb_client_max) == -1) perror("Erreur dans la création de la sémaphore de création de threads");
+  if (sem_init(&semaphoreCli, PTHREAD_PROCESS_SHARED, 1) == -1) perror("Erreur dans la création de la sémaphore du tableau clients");
   init.socket = 0;
   init.pseudo = "";
 
@@ -65,6 +67,7 @@ int main(int argc, char *argv[]) {
 
   while(1){
     if (sem_wait(&semaphore) == -1) perror("Erreur blocage sémaphore");
+    if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
 
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
 
@@ -87,7 +90,7 @@ int main(int argc, char *argv[]) {
       int sndmsg = send(dSC, msg, len, 0);
       if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
       else printf("Message d'erreur envoyé au client %d\n", dSC);
-
+      sem_post(&semaphore);
       // On incrémente pas la sémaphore
 
       continue; // On va à la prochaine boucle
@@ -101,7 +104,7 @@ int main(int argc, char *argv[]) {
       int sndmsg = send(dSC, msg, len, 0);
       if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
       else printf("Message d'erreur envoyé au client %d\n", dSC);
-
+      sem_post(&semaphore);
       // On incrémente pas la sémaphore
 
       continue; // On va à la prochaine boucle
@@ -125,9 +128,10 @@ int main(int argc, char *argv[]) {
     if (thread != 0){
       perror("Erreur création thread");
     }
-
+    sem_post(&semaphoreCli);
     i++;
   }
   printf("Trop de client, arrêt du programme.");
   sem_destroy(&semaphore);
+  sem_destroy(&semaphoreCli);
 }

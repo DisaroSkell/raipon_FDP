@@ -1,4 +1,4 @@
-#define nb_client_max 100
+#define nb_client_max 3
 #define taille_pseudo 30 // taille du pseudo en comptant le \0
 
 typedef struct argsrec {

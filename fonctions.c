@@ -9,6 +9,7 @@
 
 client clients[nb_client_max];
 sem_t semaphore;
+sem_t semaphoreCli;
 
 void * reception(void * argpointer){
     argsrec * args = argpointer;
@@ -61,6 +62,10 @@ void* traitement_serveur(void * paramspointer){
 
     int numclient = params->numclient;
 
+    client init;
+    init.socket = 0;
+    init.pseudo = "";
+
     size_t len = 0;
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
@@ -68,6 +73,9 @@ void* traitement_serveur(void * paramspointer){
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
             printf("Non connecté au client, fin du thread\n");
+            if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+            clients[numclient] = init;
+            sem_post(&semaphoreCli);
             sem_post(&semaphore);
             pthread_exit(0);
         }
@@ -78,6 +86,9 @@ void* traitement_serveur(void * paramspointer){
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
             printf("Non connecté au client, fin du thread\n");
+            if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+            clients[numclient] = init;
+            sem_post(&semaphoreCli);
             sem_post(&semaphore);
             pthread_exit(0);
         }
@@ -101,6 +112,9 @@ void* traitement_serveur(void * paramspointer){
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
             int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
             printf("%d: Fin du thread\n", numclient);
+            if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+            clients[numclient] = init;
+            sem_post(&semaphoreCli);
             sem_post(&semaphore);
             pthread_exit(0);
         } else {
