@@ -33,3 +33,5 @@ int chercher_client(char * pseudo);
 int chercher_place();
 char * lire_manuel();
 commande gestion_commande(char * msg);
+void signal_handle(int sig);
+void signal_handleCli(int sig);
