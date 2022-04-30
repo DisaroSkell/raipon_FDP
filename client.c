@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
 
-  while(envoi(dS)){}
+  while(lecture_message(dS)){}
 
   argsf.fin = 1;
   pthread_join(idt,NULL);

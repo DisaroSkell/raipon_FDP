@@ -46,7 +46,7 @@ void * reception(void * argpointer){
     }
 }
 
-int envoi(int dS) {
+int lecture_message(int dS) {
     printf("Entrez un message\n");
     char * m = (char *) malloc(50*sizeof(char));
     fgets( m, 30*sizeof(char), stdin );
