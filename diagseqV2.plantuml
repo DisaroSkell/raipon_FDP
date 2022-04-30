@@ -28,5 +28,8 @@ loop communication
     Client1 -> Serveur: Arrêt communication
     Client1 -> Client2: Arrêt communication
   end
+  alt commande "/manuel"
+    Serveur -> Client1: Envoi fichier texte
+  end
 end
 @enduml
