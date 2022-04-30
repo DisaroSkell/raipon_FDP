@@ -50,20 +50,35 @@ int main(int argc, char *argv[]) {
 
   printf("Demande de connexion au serveur...\n");
 
-  ssize_t len = 30;
+
+  int len;
+  ssize_t rcv_len = recv(dS, &len, sizeof(len), 0);
+  if (rcv_len == -1) {
+    perror("Erreur réception taille message");
+    exit(0);
+  }
+  if (rcv_len == 0) {
+    printf("Non connecté au serveur, fin du thread\n");
+    exit(0);
+  }
+
   char * msg = (char *) malloc((len)*sizeof(char));
   ssize_t rcv = recv(dS, msg, len, 0);
-  if (rcv == -1) perror("Erreur réception message de bienvenue");
+  if (rcv == -1) {
+    perror("Erreur réception message de bienvenue");
+    exit(0);
+  }
   else if (rcv == 0) {
     printf("Non connecté au serveur, fin du thread\n");
     exit(0);
   }
-  else printf("%s\n", msg);
 
   // On arrête tout si c'est pas le message de bienvenu.
   if (strcmp(msg, "Bienvenue sur le serveur !\n") != 0) {
+    printf("Mauvais message de bienvenue reçu: %s\nOn arrête tout.\n", msg);
     exit(0);
   }
+  else printf("%s\n", msg);
 
   pthread_t idt;
 

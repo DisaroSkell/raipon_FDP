@@ -36,12 +36,8 @@ void * reception(void * argpointer){
             exit(0);
         }
         else {
-            printf("Taille du message reçu: %d\n", len);
-
             printf("Message reçu :\n");
             printf("%s\n", msg);
-
-            printf("Message en int: %d\n", atoi(msg));
         }
     }
 }
@@ -49,23 +45,37 @@ void * reception(void * argpointer){
 int lecture_message(int dS) {
     printf("Entrez un message\n");
     char * m = (char *) malloc(50*sizeof(char));
-    fgets( m, 30*sizeof(char), stdin );
+    fgets(m, 30*sizeof(char), stdin);
 
-    envoi_message(m, dS);
+    envoi_message(dS, m);
 
     return strcmp(m, "/fin\n") != 0;
 }
 
-void envoi_message(char * msg, int socket) {
+// Envoie par le socket
+int envoi_message(int socket, char * msg) {
+    int resultat = 0;
+    
     int len= strlen(msg)+1;
-    int snd2 = send(socket, &len, sizeof(len), 0);
 
-    if (snd2 == -1) perror("Erreur envoi taille message");
-    else {
-        int snd = send(socket, msg, len , 0);
-        if (snd == -1) perror("Erreur envoi message");
-        else printf("Message Envoyé \n");
+    char * message = (char *) malloc(len*sizeof(char));
+    strcpy(message, msg);
+
+    int sndlen = send(socket, &len, sizeof(len), 0);
+    if (sndlen == -1) {
+        perror("Erreur envoi taille message");
+        resultat = -1;
     }
+    else {
+        int sndmsg = send(socket, message, len, 0);
+        if (sndmsg == -1) {
+            perror("Erreur envoi message");
+            resultat = -1;
+        }
+        else printf("Message envoyé:\n%s\n", message);
+    }
+
+    return resultat;
 }
 
 void* traitement_serveur(void * paramspointer){
@@ -123,14 +133,7 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
-            char * messagedeco = "Déconnexion en cours...\n";
-            
-            int tailledeco = strlen(messagedeco)+1;
-            int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
-            if (senddecotaille == -1) perror("Erreur envoi taille deco");
-
-            int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
-            if (senddeco == -1) perror("Erreur envoi deco");
+            envoi_direct(numclient, "Déconnexion en cours...\n");
             
             printf("%d: Fin du thread\n", numclient);
             
@@ -142,19 +145,7 @@ void* traitement_serveur(void * paramspointer){
             pthread_exit(0);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
-            char * temp = lire_manuel();
-            int taillemanuel = strlen(temp)+1;
-
-            char * manuel = (char *) malloc(taillemanuel*sizeof(char));
-            strcpy(manuel, temp);
-
-            int sendmanueltaille = send(clients[numclient].socket, &taillemanuel, sizeof(taillemanuel), 0);
-            if (sendmanueltaille == -1) perror("Erreur envoi taille manuel");
-            else {
-                int sendmanuel = send(clients[numclient].socket, &manuel, taillemanuel, 0);
-                if (sendmanuel == -1) perror("Erreur envoi manuel");
-                else printf("Manuel envoyé\n");
-            }
+            envoi_direct(numclient, lire_manuel());
         }
         else {
             for(int i = 0; i < nb_client_max; i++){
@@ -167,17 +158,30 @@ void* traitement_serveur(void * paramspointer){
     }
 }
 
-void envoi_direct(int numreceveur, char * msg) {
+// Envoie par l'index dans le tableau clients
+int envoi_direct(int numreceveur, char * msg) {
+    int resultat = 0;
+
     int len = strlen(msg)+1;
 
+    char * message = (char *) malloc(len*sizeof(char));
+    strcpy(message, msg);
+
     int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
-    if (sndlen == -1) perror("Erreur envoi taille message");
-    else {
-        int sndmsg = send(clients[numreceveur].socket, msg, len, 0);
-        if (sndmsg == -1) perror("Erreur envoi message");
-        
-        printf("Message Envoyé au client %d (%s): %s\n", clients[numreceveur].socket, clients[numreceveur].pseudo, msg);
+    if (sndlen == -1) {
+        perror("Erreur envoi taille message");
+        resultat = -1;
     }
+    else {
+        int sndmsg = send(clients[numreceveur].socket, message, len, 0);
+        if (sndmsg == -1) {
+            perror("Erreur envoi message");
+            resultat = -1;
+        }
+        else printf("Message Envoyé au client %d (%s):\n%s\n", clients[numreceveur].socket, clients[numreceveur].pseudo, message);
+    }
+
+    return resultat;
 }
 
 // Cette fonction cherche un client en fonction de son pseudo.
