@@ -119,7 +119,7 @@ void* traitement_serveur(void * paramspointer){
             if (destinataire == -1) {
                 printf("Destinataire non trouvé !\n");
             } else {
-                envoi_serveur(numclient, destinataire, cmd.message);
+                envoi_direct(destinataire, cmd.message);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
@@ -159,7 +159,7 @@ void* traitement_serveur(void * paramspointer){
         else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
-                    envoi_serveur(numclient, i, msg);
+                    envoi_direct(i, msg);
                 }
             }
         }
@@ -167,9 +167,7 @@ void* traitement_serveur(void * paramspointer){
     }
 }
 
-void envoi_serveur(int numclient, int numreceveur, char * msg) {
-    printf("%d: client = %d\n", numclient, clients[numreceveur].socket);
-
+void envoi_direct(int numreceveur, char * msg) {
     int len = strlen(msg)+1;
 
     int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
@@ -178,7 +176,7 @@ void envoi_serveur(int numclient, int numreceveur, char * msg) {
         int sndmsg = send(clients[numreceveur].socket, msg, len, 0);
         if (sndmsg == -1) perror("Erreur envoi message");
         
-        printf("%d: Message Envoyé au client %d (%s): %s\n", numclient, clients[numreceveur].socket, clients[numreceveur].pseudo, msg);
+        printf("Message Envoyé au client %d (%s): %s\n", clients[numreceveur].socket, clients[numreceveur].pseudo, msg);
     }
 }
 
