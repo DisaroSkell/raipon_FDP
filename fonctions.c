@@ -36,8 +36,12 @@ void * reception(void * argpointer){
             exit(0);
         }
         else {
+            printf("Taille du message reçu: %d\n", len);
+
             printf("Message reçu :\n");
             printf("%s\n", msg);
+
+            printf("Message en int: %d\n", atoi(msg));
         }
     }
 }
@@ -76,10 +80,12 @@ void* traitement_serveur(void * paramspointer){
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
             printf("Non connecté au client, fin du thread\n");
+            
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
             clients[numclient] = init;
             sem_post(&semaphoreCli);
             sem_post(&semaphore);
+            
             pthread_exit(0);
         }
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
@@ -89,10 +95,12 @@ void* traitement_serveur(void * paramspointer){
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
             printf("Non connecté au client, fin du thread\n");
+            
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
             clients[numclient] = init;
             sem_post(&semaphoreCli);
             sem_post(&semaphore);
+            
             pthread_exit(0);
         }
         else {
@@ -111,21 +119,26 @@ void* traitement_serveur(void * paramspointer){
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
             char * messagedeco = "Déconnexion en cours...\n";
-            int tailledeco = strlen(messagedeco);
+            
+            int tailledeco = strlen(messagedeco)+1;
             int senddecotaille = send(clients[numclient].socket, &tailledeco, sizeof(tailledeco), 0);
             if (senddecotaille == -1) perror("Erreur envoi taille deco");
+
             int senddeco = send(clients[numclient].socket, messagedeco, tailledeco, 0);
             if (senddeco == -1) perror("Erreur envoi deco");
+            
             printf("%d: Fin du thread\n", numclient);
+            
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
             clients[numclient] = init;
             sem_post(&semaphoreCli);
             sem_post(&semaphore);
+            
             pthread_exit(0);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
             char * temp = lire_manuel();
-            int taillemanuel = strlen(temp);
+            int taillemanuel = strlen(temp)+1;
 
             char * manuel = (char *) malloc(taillemanuel*sizeof(char));
             strcpy(manuel, temp);
@@ -177,6 +190,23 @@ int chercher_client(char * pseudo) {
             }
             resultat = i;
         }
+    }
+
+    return resultat;
+}
+
+// Cette fonction cherche une place dans le tableau clients.
+// Renvoie l'index de la place dans le tableau clients.
+int chercher_place() {
+    int resultat = -1;
+    int i = 0;
+
+    while (i < nb_client_max && resultat == -1) {
+        if (clients[i].socket == 0) {
+            resultat = i;
+        }
+
+        i++;
     }
 
     return resultat;

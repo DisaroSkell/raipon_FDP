@@ -22,9 +22,10 @@ int main(int argc, char *argv[]) {
 
   printf("Début programme\n");
 
-  client init;
   if (sem_init(&semaphore, PTHREAD_PROCESS_SHARED, nb_client_max) == -1) perror("Erreur dans la création de la sémaphore de création de threads");
   if (sem_init(&semaphoreCli, PTHREAD_PROCESS_SHARED, 1) == -1) perror("Erreur dans la création de la sémaphore du tableau clients");
+  
+  client init;
   init.socket = 0;
   init.pseudo = "";
 
@@ -62,14 +63,22 @@ int main(int argc, char *argv[]) {
   socklen_t lg = sizeof(struct sockaddr_in);
 
   pthread_t t[nb_client_max];
-  int i = 0; // Compteur de client
+  int i; // Numéro de client courant
 
 
   while(1){
     if (sem_wait(&semaphore) == -1) perror("Erreur blocage sémaphore");
-    if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
 
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
+
+    if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+    i = chercher_place();
+    sem_post(&semaphoreCli);
+
+    if (i == -1) {
+      perror("Aucune place n'a été trouvée, c'est pas normal.");
+      exit(0);
+    }
 
     traitement_params params;
     params.numclient = i;
@@ -91,25 +100,28 @@ int main(int argc, char *argv[]) {
       if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
       else printf("Message d'erreur envoyé au client %d\n", dSC);
       sem_post(&semaphore);
-      // On incrémente pas la sémaphore
 
       continue; // On va à la prochaine boucle
     }
-    else if (chercher_client(pseudo) != -1) {
-      perror("Pseudo déjà utilisé !");
+    else {
+      if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+      if (chercher_client(pseudo) != -1) {
+        perror("Pseudo déjà utilisé !");
 
-      size_t len = 30;
-      char * msg = (char *) malloc((len)*sizeof(char));
-      strcpy(msg, "Pseudo déjà utilisé.\n");
-      int sndmsg = send(dSC, msg, len, 0);
-      if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
-      else printf("Message d'erreur envoyé au client %d\n", dSC);
-      sem_post(&semaphore);
-      // On incrémente pas la sémaphore
+        size_t len = 30;
+        char * msg = (char *) malloc((len)*sizeof(char));
+        strcpy(msg, "Pseudo déjà utilisé.\n");
+        int sndmsg = send(dSC, msg, len, 0);
+        if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
+        else printf("Message d'erreur envoyé au client %d\n", dSC);
+        sem_post(&semaphore);
+        sem_post(&semaphoreCli);
 
-      continue; // On va à la prochaine boucle
+        continue; // On va à la prochaine boucle
+      }
+      else printf("%s s'est connecté !\n", pseudo);
+      sem_post(&semaphoreCli);
     }
-    else printf("%s s'est connecté !\n", pseudo);
 
     size_t len = 30;
     char * msg = (char *) malloc((len)*sizeof(char));
@@ -120,18 +132,18 @@ int main(int argc, char *argv[]) {
 
     pthread_t new;
     t[i] = new;
+
+    if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
     clients[i].socket = dSC;
     clients[i].pseudo = pseudo;
     printf("clients[%d] = %d\n", i, clients[i].socket);
+    sem_post(&semaphoreCli);
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){
       perror("Erreur création thread");
     }
-    sem_post(&semaphoreCli);
-    i++;
   }
-  printf("Trop de client, arrêt du programme.");
   sem_destroy(&semaphore);
   sem_destroy(&semaphoreCli);
 }
