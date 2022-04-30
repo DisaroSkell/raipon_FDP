@@ -51,16 +51,21 @@ int lecture_message(int dS) {
     char * m = (char *) malloc(50*sizeof(char));
     fgets( m, 30*sizeof(char), stdin );
 
-    int len= strlen(m)+1;
-    int snd2 = send(dS, &len, sizeof(len), 0);
+    envoi_message(m, dS);
+
+    return strcmp(m, "/fin\n") != 0;
+}
+
+void envoi_message(char * msg, int socket) {
+    int len= strlen(msg)+1;
+    int snd2 = send(socket, &len, sizeof(len), 0);
+
     if (snd2 == -1) perror("Erreur envoi taille message");
     else {
-        int snd = send(dS, m, len , 0);
+        int snd = send(socket, msg, len , 0);
         if (snd == -1) perror("Erreur envoi message");
         else printf("Message Envoyé \n");
     }
-
-    return strcmp(m, "/fin\n") != 0;
 }
 
 void* traitement_serveur(void * paramspointer){

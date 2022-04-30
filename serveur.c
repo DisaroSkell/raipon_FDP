@@ -93,12 +93,8 @@ int main(int argc, char *argv[]) {
     if (rcv_pseudo == -1) {
       perror("Erreur réception pseudo");
 
-      size_t len = 30;
-      char * msg = (char *) malloc((len)*sizeof(char));
-      strcpy(msg, "Pseudo mal reçu.\n");
-      int sndmsg = send(dSC, msg, len, 0);
-      if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
-      else printf("Message d'erreur envoyé au client %d\n", dSC);
+      envoi_message(dSC, "Pseudo mal reçu.\n");
+
       sem_post(&semaphore);
 
       continue; // On va à la prochaine boucle
@@ -108,12 +104,8 @@ int main(int argc, char *argv[]) {
       if (chercher_client(pseudo) != -1) {
         perror("Pseudo déjà utilisé !");
 
-        size_t len = 30;
-        char * msg = (char *) malloc((len)*sizeof(char));
-        strcpy(msg, "Pseudo déjà utilisé.\n");
-        int sndmsg = send(dSC, msg, len, 0);
-        if (sndmsg == -1) perror("Erreur envoi message d'erreur.");
-        else printf("Message d'erreur envoyé au client %d\n", dSC);
+        envoi_message(dSC, "Pseudo déjà utilisé.\n");
+        
         sem_post(&semaphore);
         sem_post(&semaphoreCli);
 
@@ -123,12 +115,7 @@ int main(int argc, char *argv[]) {
       sem_post(&semaphoreCli);
     }
 
-    size_t len = 30;
-    char * msg = (char *) malloc((len)*sizeof(char));
-    strcpy(msg, "Bienvenue sur le serveur !\n");
-    int sndmsg = send(dSC, msg, len, 0);
-    if (sndmsg == -1) perror("Erreur envoi message bienvenue");
-    else printf("Message de bienvenue envoyé au client %d\n", dSC);
+    envoi_message(dSC, "Bienvenue sur le serveur !\n");
 
     pthread_t new;
     t[i] = new;
