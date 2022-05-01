@@ -9,6 +9,8 @@
 #include "fonctions.h"
 #include <signal.h>
 
+extern int socketServeur;
+
 int main(int argc, char *argv[]) {
 
   if(argc != 4){
@@ -29,6 +31,8 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   printf("Socket Créé\n");
+
+  socketServeur = dS;
 
   struct sockaddr_in aS;
   aS.sin_family = AF_INET;
@@ -94,6 +98,9 @@ int main(int argc, char *argv[]) {
     perror("Erreur de création de thread");
     exit(0);
   }
+
+  // Écoute du ctrl c
+  signal(SIGINT, signal_handleCli);
 
   while(lecture_message(dS)){}
 

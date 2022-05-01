@@ -11,7 +11,7 @@
 client clients[nb_client_max];
 sem_t semaphore;
 sem_t semaphoreCli;
-int serveur;
+int socketServeur;
 
 void * reception(void * argpointer){
     argsrec * args = argpointer;
@@ -328,41 +328,19 @@ commande gestion_commande(char * slashmsg) {
 }
 
 void signal_handle(int sig){
-    signal(SIGINT, signal_handle);
-    char * m = (char *) malloc(50*sizeof(char));
-    strcpy(m, "Fermeture du serveur");
     for(int i = 0; i < nb_client_max; i++){
-        ssize_t len = strlen(m)+1;
         if (clients[i].socket != 0) {
-            int sndlen = send(clients[i].socket, &len, sizeof(len), 0);
-            if (sndlen == -1) perror("Erreur envoi taille message");
-            else {
-                int sndmsg = send(clients[i].socket, m, len, 0);
-                if (sndmsg == -1) perror("Erreur envoi message");
-            }
+            envoi_direct(i, "Fermeture du serveur\n");
         }
     }
-    free(m);
+
+    printf("Fin du programme\n");
     exit(0);
-    printf("Fin du programme");
 }
 
 void signal_handleCli(int sig){
-    signal(SIGINT, signal_handleCli);
-    char * m = (char *) malloc(50*sizeof(char));
-    strcpy(m, "Un client est parti ... au revoir");
-    for(int i = 0; i < nb_client_max; i++){
-        ssize_t len = strlen(m)+1;
-        if (clients[i].socket != 0) {
-            int sndlen = send(serveur, &len, sizeof(len), 0);
-            if (sndlen == -1) perror("Erreur envoi taille message");
-            else {
-                int sndmsg = send(serveur, m, len, 0);
-                if (sndmsg == -1) perror("Erreur envoi message");
-            }
-        }
-    }
-    free(m);
+    envoi_message(socketServeur, "Cette personne se déconnecte.\n");
+
+    printf("Fin du programme\n");
     exit(0);
-    printf("Fin du programme");
 }

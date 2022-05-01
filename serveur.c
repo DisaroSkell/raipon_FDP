@@ -13,7 +13,6 @@
 extern client clients[nb_client_max];
 extern sem_t semaphore;
 extern sem_t semaphoreCli;
-extern int serveur = 0;
 
 int main(int argc, char *argv[]) {
 
@@ -40,7 +39,6 @@ int main(int argc, char *argv[]) {
     perror("Erreur dans la création de la socket");
     exit(0);
   }
-  serveur = dS;
   printf("Socket Créé\n");
 
   struct sockaddr_in ad;
@@ -68,7 +66,7 @@ int main(int argc, char *argv[]) {
   pthread_t t[nb_client_max];
   int i; // Numéro de client courant
 
-  //écoute ctrl c
+  // Écoute du ctrl c
   signal(SIGINT, signal_handle);
 
   while(1){
