@@ -131,11 +131,11 @@ void* traitement_serveur(void * paramspointer){
             if (destinataire == -1) {
                 printf("Destinataire non trouvé !\n");
             } else {
-                envoi_direct(destinataire, cmd.message);
+                envoi_direct(destinataire, cmd.message, clients[numclient].pseudo);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
-            envoi_direct(numclient, "Déconnexion en cours...\n");
+            envoi_direct(numclient, "Déconnexion en cours...\n", "Serveur");
             
             printf("%d: Fin du thread\n", numclient);
             
@@ -147,12 +147,12 @@ void* traitement_serveur(void * paramspointer){
             pthread_exit(0);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
-            envoi_direct(numclient, lire_manuel());
+            envoi_direct(numclient, lire_manuel(), "Serveur");
         }
         else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
-                    envoi_direct(i, msg);
+                    envoi_direct(i, msg, clients[numclient].pseudo);
                 }
             }
         }
@@ -161,13 +161,18 @@ void* traitement_serveur(void * paramspointer){
 }
 
 // Envoie par l'index dans le tableau clients
-int envoi_direct(int numreceveur, char * msg) {
+// On va envoyer le message comme ceci : "<pseudo> : message"
+int envoi_direct(int numreceveur, char * msg, char * expediteur) {
     int resultat = 0;
 
-    int len = strlen(msg)+1;
+    // "<" + "pseudo" + "> : " + msg + "\0"
+    int len = 1 + strlen(expediteur) + 4 + strlen(msg) + 1;
 
     char * message = (char *) malloc(len*sizeof(char));
-    strcpy(message, msg);
+    strcpy(message, "<");
+    message = strcat(message, expediteur);
+    message = strcat(message, "> : ");
+    message = strcat(message, msg);
 
     int sndlen = send(clients[numreceveur].socket, &len, sizeof(len), 0);
     if (sndlen == -1) {
@@ -330,7 +335,7 @@ commande gestion_commande(char * slashmsg) {
 void signal_handle(int sig){
     for(int i = 0; i < nb_client_max; i++){
         if (clients[i].socket != 0) {
-            envoi_direct(i, "Fermeture du serveur\n");
+            envoi_direct(i, "Fermeture du serveur\n", "Serveur");
         }
     }
 

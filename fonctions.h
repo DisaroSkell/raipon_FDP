@@ -28,7 +28,7 @@ void * reception(void * argpointer);
 int lecture_message(int dS);
 int envoi_message(int socket, char * msg);
 void * traitement_serveur(void * paramspointer);
-int envoi_direct(int numreceveur, char * msg);
+int envoi_direct(int numreceveur, char * msg, char * envoyeur);
 int chercher_client(char * pseudo);
 int chercher_place();
 char * lire_manuel();
