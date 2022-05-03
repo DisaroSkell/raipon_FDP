@@ -129,7 +129,7 @@ void* traitement_serveur(void * paramspointer){
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) {
             int destinataire = chercher_client(cmd.user);
             if (destinataire == -1) {
-                printf("Destinataire non trouvé !\n");
+                envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur");
             } else {
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo);
             }
