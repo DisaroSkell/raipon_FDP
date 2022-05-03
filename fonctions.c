@@ -149,6 +149,9 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
+        else if (cmd.id_op == -1) {
+            envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
+        }
         else {
             for(int i = 0; i < nb_client_max; i++){
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
@@ -326,6 +329,7 @@ commande gestion_commande(char * slashmsg) {
         }
         else {
             perror("Commande non reconnue");
+            result.id_op = -1;
             return result;
         }
     }

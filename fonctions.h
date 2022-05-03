@@ -16,7 +16,7 @@ typedef struct traitement_params {
 }traitement_params;
 
 typedef struct commande {
-  // L'id de la commande: -1 = problème dans la fonction; 0 = pas de commande; 1 = /;
+  // L'id de la commande: -1 = commande / non reconnue; 0 = pas de commande; 1 = /;
   int id_op;
   char * nom_cmd; // Le nom de la commande qui suit l'opérateur
   char * message;
