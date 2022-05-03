@@ -114,6 +114,16 @@ int main(int argc, char *argv[]) {
 
         continue; // On va à la prochaine boucle
       }
+      else if (strcmp(pseudo, "Serveur") == 0) {
+        perror("Quelqu'un veut s'appeler Serveur !");
+
+        envoi_message(dSC, "Vous ne pouvez pas vous appeler Serveur !\n");
+
+        sem_post(&semaphore);
+        sem_post(&semaphoreCli);
+
+        continue; // On va à la prochaine boucle
+      }
       else printf("%s s'est connecté !\n", pseudo);
       sem_post(&semaphoreCli);
     }
