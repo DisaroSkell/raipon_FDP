@@ -105,6 +105,10 @@ void* traitement_serveur(void * paramspointer){
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur");
             } else {
+                while (strchr(cmd.message, '\n') == NULL) {
+                    strcat(cmd.message, reception_message(numclient));
+                }
+
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo);
             }
         }
