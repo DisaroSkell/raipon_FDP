@@ -86,6 +86,7 @@ void* traitement_serveur(void * paramspointer){
 
     int numclient = params->numclient;
 
+    // client vide, utilisé pour remplacé ce client dans clients en cas de fermeture du thread
     client init;
     init.socket = 0;
     init.pseudo = "";
@@ -93,9 +94,11 @@ void* traitement_serveur(void * paramspointer){
     int len = 0;
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
+        // On reçoit la taille du message
         ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
         if (rcv_len == -1) perror("Erreur réception taille message");
         if (rcv_len == 0) {
+            // On arrête tout
             printf("Non connecté au client, fin du thread\n");
             
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
@@ -107,10 +110,12 @@ void* traitement_serveur(void * paramspointer){
         }
         printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
 
+        // On reçoit le message
         char * msg = (char *) malloc((len)*sizeof(char));
         ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
         if (rcv == -1) perror("Erreur réception message");
         if (rcv == 0) {
+            // On arrête tout
             printf("Non connecté au client, fin du thread\n");
             
             if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
@@ -126,15 +131,16 @@ void* traitement_serveur(void * paramspointer){
 
         commande cmd = gestion_commande(msg);
 
-        if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) {
+        if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
             int destinataire = chercher_client(cmd.user);
-            if (destinataire == -1) {
+            if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur");
             } else {
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
+            // On arrête tout
             envoi_direct(numclient, "Déconnexion en cours...\n", "Serveur");
             
             printf("%d: Fin du thread\n", numclient);
@@ -146,20 +152,21 @@ void* traitement_serveur(void * paramspointer){
             
             pthread_exit(0);
         }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) {
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
-        else if (cmd.id_op == -1) {
+        else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
         }
-        else {
+        else { // On envoie un message à tous les clients
             for(int i = 0; i < nb_client_max; i++){
+                // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
                 if (clients[i].socket != clients[numclient].socket && clients[i].socket != 0) {
                     envoi_direct(i, msg, clients[numclient].pseudo);
                 }
             }
         }
-        free(msg);
+        free(msg); // On libère la mémoire du message 
     }
 }
 
