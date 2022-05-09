@@ -1,8 +1,0 @@
-- /mp [pseudo] [message]
-    Envoie un message direct à une personne par son pseudo.
-
-- /fin
-    Permet de se déconnecter
-
-- /manuel
-    Globalement ce que vous venez de faire: affiche la liste des commandes
