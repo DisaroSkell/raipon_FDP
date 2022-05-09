@@ -13,7 +13,7 @@ sem_t semaphore;
 sem_t semaphoreCli;
 int socketServeur;
 
-void * reception(void * argpointer){
+void * thread_reception(void * argpointer){
     argsrec * args = argpointer;
     int len = 0;
     while(!(args->fin)) {
@@ -91,48 +91,17 @@ void* traitement_serveur(void * paramspointer){
     init.socket = 0;
     init.pseudo = "";
 
-    int len = 0;
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
-        // On reçoit la taille du message
-        ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
-        if (rcv_len == -1) perror("Erreur réception taille message");
-        if (rcv_len == 0) {
-            // On arrête tout
-            printf("Non connecté au client, fin du thread\n");
-            
-            if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
-            clients[numclient] = init;
-            sem_post(&semaphoreCli);
-            sem_post(&semaphore);
-            
-            pthread_exit(0);
-        }
-        printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
+        char * msg = reception_message(numclient);
 
-        // On reçoit le message
-        char * msg = (char *) malloc((len)*sizeof(char));
-        ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
-        if (rcv == -1) perror("Erreur réception message");
-        if (rcv == 0) {
-            // On arrête tout
-            printf("Non connecté au client, fin du thread\n");
-            
-            if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
-            clients[numclient] = init;
-            sem_post(&semaphoreCli);
-            sem_post(&semaphore);
-            
-            pthread_exit(0);
-        }
-        else {
-            printf("%d: Message reçu : %s\n", numclient, msg);
-        }
+        printf("%d: Message reçu : %s\n", numclient, msg);
 
         commande cmd = gestion_commande(msg);
 
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
             int destinataire = chercher_client(cmd.user);
+
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur");
             } else {
@@ -199,6 +168,49 @@ int envoi_direct(int numreceveur, char * msg, char * expediteur) {
     }
 
     return resultat;
+}
+
+char * reception_message(int numclient) {
+    // client vide, utilisé pour remplacé ce client dans clients en cas de fermeture du thread
+    client init;
+    init.socket = 0;
+    init.pseudo = "";
+
+    int len;
+
+    // On reçoit la taille du message
+    ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
+    if (rcv_len == -1) perror("Erreur réception taille message");
+    if (rcv_len == 0) {
+        // On arrête tout
+        printf("Non connecté au client, fin du thread\n");
+        
+        if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+        clients[numclient] = init;
+        sem_post(&semaphoreCli);
+        sem_post(&semaphore);
+        
+        pthread_exit(0);
+    }
+    printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
+
+    // On reçoit le message
+    char * msg = (char *) malloc((len)*sizeof(char));
+    ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
+    if (rcv == -1) perror("Erreur réception message");
+    if (rcv == 0) {
+        // On arrête tout
+        printf("Non connecté au client, fin du thread\n");
+        
+        if (sem_wait(&semaphoreCli) == -1) perror("Erreur blocage sémaphore");
+        clients[numclient] = init;
+        sem_post(&semaphoreCli);
+        sem_post(&semaphore);
+        
+        pthread_exit(0);
+    }
+
+    return msg;
 }
 
 // Cette fonction cherche un client en fonction de son pseudo.

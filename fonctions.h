@@ -24,11 +24,12 @@ typedef struct commande {
 }commande;
 
 // Les envoie renvoient 0 si tout se passe bien et -1 s'il y a une erreur.
-void * reception(void * argpointer);
+void * thread_reception(void * argpointer);
 int lecture_message(int dS);
 int envoi_message(int socket, char * msg);
 void * traitement_serveur(void * paramspointer);
 int envoi_direct(int numreceveur, char * msg, char * envoyeur);
+char * reception_message(int numclient);
 int chercher_client(char * pseudo);
 int chercher_place();
 char * lire_manuel();
