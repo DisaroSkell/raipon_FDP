@@ -270,6 +270,7 @@ char * lire_manuel() {
     }
     else {
         perror("Problème dans la lecture du fichier");
+        return "Manuel actuellement indisponible.\n";
     }
 }
 
