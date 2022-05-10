@@ -46,6 +46,7 @@ int lecture_message(int dS) {
     char * m = (char *) malloc(50*sizeof(char));
     fgets(m, 30*sizeof(char), stdin);
 
+    if (strcmp(m,"/fichier"))
     envoi_message(dS, m);
 
     return strcmp(m, "/fin\n") != 0;
@@ -75,6 +76,22 @@ int envoi_message(int socket, char * msg) {
     }
 
     return resultat;
+}
+
+void envoi_repertoire(int socket) {
+    DIR *mydir;
+    struct dirent *myfile;
+    struct stat mystat;
+    char * msg;
+    mydir = opendir("Public");
+    while ((myfile = readdir(mydir)) != NULL) {
+        msg = (char *) malloc(30*sizeof(char));
+        stat(myfile->d_name, &mystat);
+        sprintf(msg,"%ld %s",mystat.st_size,myfile->d_name);
+        printf("%s\n",msg);
+        envoi_message(socket,msg);
+        free(msg);
+    }
 }
 
 void signal_handleCli(int sig){

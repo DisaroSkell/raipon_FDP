@@ -240,7 +240,7 @@ char * lire_manuel() {
     }
 }
 
-char * envoi_repertoire(int numclient) {
+void envoi_repertoire(int numclient) {
     DIR *mydir;
     struct dirent *myfile;
     struct stat mystat;
@@ -249,9 +249,8 @@ char * envoi_repertoire(int numclient) {
     while ((myfile = readdir(mydir)) != NULL) {
         msg = (char *) malloc(30*sizeof(char));
         stat(myfile->d_name, &mystat);
-        strcpy(msg, mystat.st_size);
-        strcat(msg, " ");
-        strcat(msg, myfile->d_name);
+        sprintf(msg,"%ld %s",mystat.st_size,myfile->d_name);
+        printf("%s\n",msg);
         envoi_direct(numclient,msg, "Serveur");
         free(msg);
     }

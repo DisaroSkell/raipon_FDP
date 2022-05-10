@@ -87,6 +87,13 @@ int chercher_place();
 char * lire_manuel();
 
 /**
+ * @brief Envoie le contenu du répertoire Public (source: https://askcodez.com/implementation-de-la-commande-ls-al-en-c.html)
+ * 
+ * @param numclient Indice du client dans le tableau
+ */
+void envoi_repertoire(int numclient);
+
+/**
  * @brief Analyse le message pour y reconnaître une commande
  * 
  * @param msg Message à analyser
