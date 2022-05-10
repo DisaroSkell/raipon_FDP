@@ -7,9 +7,17 @@
 #include "fonctions_serveur.h"
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
+
+// Tableau de clients contenant tous les membres connectés
 client clients[nb_client_max];
+
+// Sémaphore pour la connexion, gère la disponibilités des places
 sem_t semaphore;
+
+// Sémaphore mutex pour protéger l'accès au tableau clients dans les zones critiques
 sem_t semaphoreCli;
 
 // Envoie par le socket
@@ -86,6 +94,9 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fichier") == 0) {
+            envoi_repertoire(numclient);
+        }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
         }
@@ -101,8 +112,6 @@ void* traitement_serveur(void * paramspointer){
     }
 }
 
-// Envoie par l'index dans le tableau clients
-// On va envoyer le message comme ceci : "<pseudo> : message"
 int envoi_direct(int numreceveur, char * msg, char * expediteur) {
     int resultat = 0;
 
@@ -175,8 +184,6 @@ char * reception_message(int numclient) {
     return msg;
 }
 
-// Cette fonction cherche un client en fonction de son pseudo.
-// Renvoie -1 si non trouvé. Renvoie l'index dans le tableau clients sinon.
 int chercher_client(char * pseudo) {
     int resultat = -1;
 
@@ -193,8 +200,6 @@ int chercher_client(char * pseudo) {
     return resultat;
 }
 
-// Cette fonction cherche une place dans le tableau clients.
-// Renvoie l'index de la place dans le tableau clients.
 int chercher_place() {
     int resultat = -1;
     int i = 0;
@@ -210,7 +215,6 @@ int chercher_place() {
     return resultat;
 }
 
-// Une partie du code de cette fonction a été trouvé sur ce site : https://www.codegrepper.com/code-examples/c/c+read+file+into+string
 char * lire_manuel() {
     char * buffer = 0;
     long length;
@@ -233,6 +237,23 @@ char * lire_manuel() {
     else {
         perror("Problème dans la lecture du fichier");
         return "Manuel actuellement indisponible.\n";
+    }
+}
+
+char * envoi_repertoire(int numclient) {
+    DIR *mydir;
+    struct dirent *myfile;
+    struct stat mystat;
+    char * msg;
+    mydir = opendir("Public");
+    while ((myfile = readdir(mydir)) != NULL) {
+        msg = (char *) malloc(30*sizeof(char));
+        stat(myfile->d_name, &mystat);
+        strcpy(msg, mystat.st_size);
+        strcat(msg, " ");
+        strcat(msg, myfile->d_name);
+        envoi_direct(numclient,msg, "Serveur");
+        free(msg);
     }
 }
 
@@ -308,6 +329,10 @@ commande gestion_commande(char * slashmsg) {
         else if (strcmp(cmd,"manuel\n") == 0) {
             result.nom_cmd = (char *) malloc(strlen("manuel")*sizeof(char));
             strcpy(result.nom_cmd, "manuel");
+        }
+        else if (strcmp(cmd,"fichier\n") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("fichier")*sizeof(char));
+            strcpy(result.nom_cmd, "fichier");
         }
         else {
             perror("Commande non reconnue");
