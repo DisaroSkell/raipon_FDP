@@ -80,7 +80,7 @@ int chercher_client(char * pseudo);
 int chercher_place();
 
 /**
- * @brief Consulte le fichier Public/manuel
+ * @brief Consulte le fichier Public/manuel (source: https://www.codegrepper.com/code-examples/c/c+read+file+into+string)
  * 
  * @return Le manuel lu en String
  */
