@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#define SIZE 1024
+#define SIZE 30
 
 int socketServeur;
 
@@ -63,12 +63,12 @@ int lecture_message(int dS) {
         if (token == NULL) {
                 perror("Vous devez mettre le nom du fichier après /file !");
             }
-        strcpy(token,nomfichier);
+        strcpy(nomfichier, token);
         token = strtok(NULL, " ");
         if (token == NULL) {
                 perror("Vous devez mettre la taille du fichier après son nom !");
             }
-        strcpy(token,taillefichier);
+        strcpy(taillef, token);
         int taillefichier = atoi(taillef);
         envoi_fichier(dS, nomfichier, taillefichier);
     }
@@ -117,7 +117,10 @@ void envoi_repertoire(int socket) {
 
 void envoi_fichier(int socket, char * nomfichier, int taillefichier) {
     FILE *fp;
-    fp = fopen(nomfichier, "r");
+    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomf, "Public/");
+    strcat(nomf, nomfichier);
+    fp = fopen(nomf, "r");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier");
         exit(1);
@@ -127,7 +130,8 @@ void envoi_fichier(int socket, char * nomfichier, int taillefichier) {
     
     char * message = (char *) malloc(10*sizeof(char));
     strcpy(message, "/file");
-    envoi_message(socket,message);
+    envoi_message(socket, message);
+    envoi_message(socket, nomfichier);
     while(fgets(data, SIZE, fp) != NULL) {
         if (send(socket, data, sizeof(data), 0) == -1) {
         perror("[-]Error in sending file.");

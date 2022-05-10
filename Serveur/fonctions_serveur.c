@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#define SIZE 30
 
 
 // Tableau de clients contenant tous les membres connectés
@@ -94,11 +95,14 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fichier") == 0) {
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fichierServeur") == 0) {
             envoi_repertoire(numclient);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "file") == 0) {
-            
+            char * nomfichier = (char *) malloc(20*sizeof(char));
+            char * msgnom = reception_message(numclient);
+            strcpy(nomfichier, msgnom);
+            recup_fichier(clients[numclient].socket, nomfichier);
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
@@ -259,6 +263,23 @@ void envoi_repertoire(int numclient) {
     }
 }
 
+void recup_fichier(int dSC, char * nomfichier) {
+    FILE *fp;
+    int n;
+    char buffer[SIZE];
+    fp = fopen(nomfichier, "w");
+    while (1) {
+    n = recv(dSC, buffer, SIZE, 0);
+    if (n <= 0){
+      break;
+      return;
+    }
+    fprintf(fp, "%s", buffer);
+    bzero(buffer, SIZE);
+  }
+  return;
+}
+
 commande gestion_commande(char * slashmsg) {
     commande result;
     result.id_op = 0;
@@ -332,9 +353,9 @@ commande gestion_commande(char * slashmsg) {
             result.nom_cmd = (char *) malloc(strlen("manuel")*sizeof(char));
             strcpy(result.nom_cmd, "manuel");
         }
-        else if (strcmp(cmd,"fichier\n") == 0) {
-            result.nom_cmd = (char *) malloc(strlen("fichier")*sizeof(char));
-            strcpy(result.nom_cmd, "fichier");
+        else if (strcmp(cmd,"fichierServeur\n") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("fichierServeur")*sizeof(char));
+            strcpy(result.nom_cmd, "fichierServeur");
         }
         else if (strcmp(cmd,"file\n") == 0) {
             result.nom_cmd = (char *) malloc(strlen("file")*sizeof(char));

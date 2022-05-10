@@ -93,6 +93,8 @@ char * lire_manuel();
  */
 void envoi_repertoire(int numclient);
 
+void recup_fichier(int dSC, char * nomfichier);
+
 /**
  * @brief Analyse le message pour y reconnaître une commande
  * 
