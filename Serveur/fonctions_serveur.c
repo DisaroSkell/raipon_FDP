@@ -97,6 +97,9 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fichier") == 0) {
             envoi_repertoire(numclient);
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "file") == 0) {
+            
+        }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
         }
@@ -332,6 +335,10 @@ commande gestion_commande(char * slashmsg) {
         else if (strcmp(cmd,"fichier\n") == 0) {
             result.nom_cmd = (char *) malloc(strlen("fichier")*sizeof(char));
             strcpy(result.nom_cmd, "fichier");
+        }
+        else if (strcmp(cmd,"file\n") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("file")*sizeof(char));
+            strcpy(result.nom_cmd, "file");
         }
         else {
             perror("Commande non reconnue");

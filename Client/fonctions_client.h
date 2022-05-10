@@ -32,6 +32,8 @@ int lecture_message(int dS);
  */
 int envoi_message(int socket, char * msg);
 
+void envoi_repertoire(int socket);
+
 /**
  * @brief Fonction de signal CTRL C client
  */

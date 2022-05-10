@@ -7,6 +7,9 @@
 #include "fonctions_client.h"
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#define SIZE 1024
 
 int socketServeur;
 
@@ -45,9 +48,31 @@ int lecture_message(int dS) {
     printf("Entrez un message\n");
     char * m = (char *) malloc(50*sizeof(char));
     fgets(m, 30*sizeof(char), stdin);
+    char * token = strtok(m, " "); // On segmente la commande avec les espaces
 
-    if (strcmp(m,"/fichier"))
-    envoi_message(dS, m);
+    if (strcmp(m,"/fichier\n") == 0) {
+        envoi_repertoire(dS);
+    }
+    else if (strcmp(token,"/file\n") == 0) {
+        perror("Vous devez mettre le nom du fichier après /file !");
+    }
+    else if (strcmp(token,"/file") == 0) {
+        char * nomfichier = (char *) malloc(20*sizeof(char));
+        char * taillef = (char *) malloc(5*sizeof(char));
+        token = strtok(NULL, " ");
+        if (token == NULL) {
+                perror("Vous devez mettre le nom du fichier après /file !");
+            }
+        strcpy(token,nomfichier);
+        token = strtok(NULL, " ");
+        if (token == NULL) {
+                perror("Vous devez mettre la taille du fichier après son nom !");
+            }
+        strcpy(token,taillefichier);
+        int taillefichier = atoi(taillef);
+        envoi_fichier(dS, nomfichier, taillefichier);
+    }
+    else envoi_message(dS, m);
 
     return strcmp(m, "/fin\n") != 0;
 }
@@ -82,16 +107,34 @@ void envoi_repertoire(int socket) {
     DIR *mydir;
     struct dirent *myfile;
     struct stat mystat;
-    char * msg;
     mydir = opendir("Public");
     while ((myfile = readdir(mydir)) != NULL) {
-        msg = (char *) malloc(30*sizeof(char));
         stat(myfile->d_name, &mystat);
-        sprintf(msg,"%ld %s",mystat.st_size,myfile->d_name);
-        printf("%s\n",msg);
-        envoi_message(socket,msg);
-        free(msg);
+        printf("%ld",mystat.st_size);
+        printf(" %s\n", myfile->d_name);
     }
+}
+
+void envoi_fichier(int socket, char * nomfichier, int taillefichier) {
+    FILE *fp;
+    fp = fopen(nomfichier, "r");
+    if (fp == NULL) {
+        perror("Erreur durant la lecture du fichier");
+        exit(1);
+    }
+    int n;
+    char data[SIZE] = {0};
+    
+    char * message = (char *) malloc(10*sizeof(char));
+    strcpy(message, "/file");
+    envoi_message(socket,message);
+    while(fgets(data, SIZE, fp) != NULL) {
+        if (send(socket, data, sizeof(data), 0) == -1) {
+        perror("[-]Error in sending file.");
+        exit(1);
+    }
+    bzero(data, SIZE);
+  }
 }
 
 void signal_handleCli(int sig){
