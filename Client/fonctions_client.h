@@ -34,7 +34,7 @@ int envoi_message(int socket, char * msg);
 
 void envoi_repertoire(int socket);
 
-void envoi_fichier(int socket, char * nomfichier, int taillefichier);
+void envoi_fichier(int socket, char * nomfichier);
 
 /**
  * @brief Fonction de signal CTRL C client

@@ -60,12 +60,13 @@ void* traitement_serveur(void * paramspointer){
 
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
+        printf("Avant recption\n");
         char * msg = reception_message(numclient);
 
         printf("%d: Message reçu : %s\n", numclient, msg);
 
         commande cmd = gestion_commande(msg);
-
+        printf("Commande reçue %d\n",cmd.id_op);
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
             int destinataire = chercher_client(cmd.user);
 
@@ -99,10 +100,12 @@ void* traitement_serveur(void * paramspointer){
             envoi_repertoire(numclient);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "file") == 0) {
-            char * nomfichier = (char *) malloc(20*sizeof(char));
-            char * msgnom = reception_message(numclient);
-            strcpy(nomfichier, msgnom);
-            recup_fichier(clients[numclient].socket, nomfichier);
+            
+            char * nomfichier = reception_message(numclient);
+            long taillefichier = reception_message(numclient);
+            recup_fichier(clients[numclient].socket, nomfichier, taillefichier);
+            free(nomfichier);
+            printf("Apres free fichier \n");
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
@@ -116,6 +119,7 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         free(msg); // On libère la mémoire du message 
+        printf("Apres free message\n");
     }
 }
 
@@ -263,20 +267,22 @@ void envoi_repertoire(int numclient) {
     }
 }
 
-void recup_fichier(int dSC, char * nomfichier) {
+void recup_fichier(int dSC, char * nomfichier, int taillefichier) {
     FILE *fp;
-    int n;
+    int n=0;
     char buffer[SIZE];
     fp = fopen(nomfichier, "w");
+    printf("fichier créé\n");
     while (1) {
-    n = recv(dSC, buffer, SIZE, 0);
-    if (n <= 0){
+    n += recv(dSC, buffer, SIZE, 0);
+    if (n = taillefichier){
       break;
-      return;
     }
     fprintf(fp, "%s", buffer);
     bzero(buffer, SIZE);
-  }
+  }    
+    printf("fichier fini\n");
+    fclose(fp);
   return;
 }
 
@@ -357,7 +363,7 @@ commande gestion_commande(char * slashmsg) {
             result.nom_cmd = (char *) malloc(strlen("fichierServeur")*sizeof(char));
             strcpy(result.nom_cmd, "fichierServeur");
         }
-        else if (strcmp(cmd,"file\n") == 0) {
+        else if (strcmp(cmd,"file") == 0) {
             result.nom_cmd = (char *) malloc(strlen("file")*sizeof(char));
             strcpy(result.nom_cmd, "file");
         }

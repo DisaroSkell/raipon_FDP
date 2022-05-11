@@ -64,13 +64,15 @@ int lecture_message(int dS) {
                 perror("Vous devez mettre le nom du fichier après /file !");
             }
         strcpy(nomfichier, token);
+
+        char * taillefi = (char *) malloc(5*sizeof(char));
         token = strtok(NULL, " ");
         if (token == NULL) {
                 perror("Vous devez mettre la taille du fichier après son nom !");
             }
-        strcpy(taillef, token);
-        int taillefichier = atoi(taillef);
-        envoi_fichier(dS, nomfichier, taillefichier);
+        strcpy(taillefi, token);
+
+        envoi_fichier(dS, nomfichier);
     }
     else envoi_message(dS, m);
 
@@ -115,7 +117,7 @@ void envoi_repertoire(int socket) {
     }
 }
 
-void envoi_fichier(int socket, char * nomfichier, int taillefichier) {
+void envoi_fichier(int socket, char * nomfichier) {
     FILE *fp;
     char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
     strcpy(nomf, "Public/");
@@ -127,13 +129,32 @@ void envoi_fichier(int socket, char * nomfichier, int taillefichier) {
     }
     int n;
     char data[SIZE] = {0};
-    
+
+    char * buffer = 0;
+    long taillefichier;
+
+    if (fp) {
+        fseek (fp, 0, SEEK_END);
+        taillefichier = ftell (fp);
+        fseek (fp, 0, SEEK_SET);
+        buffer = malloc (taillefichier);
+        if (buffer) {
+            fread (buffer, 1, taillefichier, fp);
+        }
+    }
+
+    else {
+        perror("Problème dans la lecture du fichier");
+    }
+    char * taillef = (char *) malloc(5*sizeof(char));
     char * message = (char *) malloc(10*sizeof(char));
+    sprintf(taillef, "%ld", taillefichier);
     strcpy(message, "/file");
     envoi_message(socket, message);
     envoi_message(socket, nomfichier);
+    envoi_message(socket, taillef);
     while(fgets(data, SIZE, fp) != NULL) {
-        if (send(socket, data, sizeof(data), 0) == -1) {
+        if (send(socket, data, SIZE, 0) == -1) {
         perror("[-]Error in sending file.");
         exit(1);
     }
