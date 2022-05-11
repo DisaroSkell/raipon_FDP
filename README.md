@@ -7,12 +7,12 @@ Codé par Louis VAN DER PUTTE, Anaëlle Danton et Alma Sorrentino
 
 ## Compilation de l'application
 
-Pour compiler le fichier client : gcc -o client client.c fonctions_client.c -lpthread
-
-Pour compiler le fichier serveur : gcc -o serveur serveur.c fonctions_serveur.c -lpthread
+Pour compiler les fichiers, placez vous à la racine du projet et faites: ./compile.sh
 
 ## Lancement de l'application
 
-Pour lancer le fichier client : ./client [Pseudonyme] [IPServeur] [port]
+À la racine du fichier:
 
-Pour lancer le fichier serveur : ./serveur [port]
+* Pour lancer le fichier client : ./Client/client [Pseudonyme] [IPServeur] [port]
+
+* Pour lancer le fichier serveur : ./Serveur/serveur [port]

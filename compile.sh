@@ -1,0 +1,1 @@
+gcc -o Client/client Client/client.c Client/fonctions_client.c -lpthread && gcc -o Serveur/serveur Serveur/serveur.c Serveur/fonctions_serveur.c -lpthread
