@@ -1,4 +1,4 @@
-- /mp [pseudo] [message]
+  /mp [pseudo] [message]
     Envoie un message direct à une personne par son pseudo.
 
 - /fin

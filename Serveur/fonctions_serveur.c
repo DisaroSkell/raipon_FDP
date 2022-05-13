@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#define SIZE 30
+#define SIZE 1024
 
 
 // Tableau de clients contenant tous les membres connectés
@@ -60,7 +60,6 @@ void* traitement_serveur(void * paramspointer){
 
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
-        printf("Avant recption\n");
         char * msg = reception_message(numclient);
 
         printf("%d: Message reçu : %s\n", numclient, msg);
@@ -100,12 +99,45 @@ void* traitement_serveur(void * paramspointer){
             envoi_repertoire(numclient);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "file") == 0) {
-            
             char * nomfichier = reception_message(numclient);
-            long taillefichier = reception_message(numclient);
+            long taillefichier = atoi(reception_message(numclient));
             recup_fichier(clients[numclient].socket, nomfichier, taillefichier);
             free(nomfichier);
-            printf("Apres free fichier \n");
+        }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "Sfile") == 0) {
+            char * nomfichier = reception_message(numclient);
+            FILE *fp;
+            char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+            strcpy(nomf, "Public/");
+            strcat(nomf, nomfichier);
+
+            fp = fopen(nomf, "r");
+            if (fp == NULL) {
+                perror("Erreur durant la lecture du fichier");
+                exit(1);
+            }
+
+            char * buffer = 0;
+            long taillefichier;
+
+            if (fp) {
+                fseek (fp, 0, SEEK_END);
+                taillefichier = ftell (fp);
+                fseek (fp, 0, SEEK_SET);
+                buffer = malloc (taillefichier);
+                if (buffer) {
+                    fread (buffer, 1, taillefichier, fp);
+                }
+            }
+
+            else {
+                perror("Problème dans la lecture du fichier");
+            }
+
+            char * taillef = (char *) malloc(5*sizeof(char));
+            sprintf(taillef, "%ld", taillefichier);
+            envoi_direct(numclient, taillef, "Serveur");
+            recup_fichier(clients[numclient].socket, nomfichier, taillefichier);
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
@@ -119,7 +151,6 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         free(msg); // On libère la mémoire du message 
-        printf("Apres free message\n");
     }
 }
 
@@ -267,23 +298,41 @@ void envoi_repertoire(int numclient) {
     }
 }
 
-void recup_fichier(int dSC, char * nomfichier, int taillefichier) {
+void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
     FILE *fp;
-    int n=0;
+    long n=0;
     char buffer[SIZE];
-    fp = fopen(nomfichier, "w");
-    printf("fichier créé\n");
-    while (1) {
-    n += recv(dSC, buffer, SIZE, 0);
-    if (n = taillefichier){
-      break;
-    }
+    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomf, "Public/");
+    strcat(nomf, nomfichier);
+    fp = fopen(nomf, "w");
+    n += (recv(dSC, buffer, SIZE, 0));
     fprintf(fp, "%s", buffer);
-    bzero(buffer, SIZE);
-  }    
-    printf("fichier fini\n");
+    printf("n : %ld", n);
     fclose(fp);
-  return;
+}
+
+void envoi_fichier(int socket, char * nomfichier, long taillefichier) {
+    FILE *fp;
+    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomf, "Public/");
+    strcat(nomf, nomfichier);
+    fp = fopen(nomf, "r");
+    if (fp == NULL) {
+        perror("Erreur durant la lecture du fichier");
+        exit(1);
+    }
+
+    char data[SIZE] = {0};
+
+    while(fgets(data, SIZE, fp) != NULL) {
+        printf("data : %s", data);
+        if (send(socket, data, SIZE, 0) == -1) {
+            perror("Erreur dans l'envoi du fichier");
+            exit(1);
+        }
+        bzero(data, SIZE);
+    }
 }
 
 commande gestion_commande(char * slashmsg) {
@@ -366,6 +415,10 @@ commande gestion_commande(char * slashmsg) {
         else if (strcmp(cmd,"file") == 0) {
             result.nom_cmd = (char *) malloc(strlen("file")*sizeof(char));
             strcpy(result.nom_cmd, "file");
+        }
+        else if (strcmp(cmd,"Sfile") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("Sfile")*sizeof(char));
+            strcpy(result.nom_cmd, "Sfile");
         }
         else {
             perror("Commande non reconnue");

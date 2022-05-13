@@ -36,6 +36,8 @@ void envoi_repertoire(int socket);
 
 void envoi_fichier(int socket, char * nomfichier);
 
+void recup_fichier(int dSC, char * nomfichier, long taillefichier);
+
 /**
  * @brief Fonction de signal CTRL C client
  */

@@ -9,7 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#define SIZE 30
+#define SIZE 1024
 
 int socketServeur;
 
@@ -58,21 +58,48 @@ int lecture_message(int dS) {
     }
     else if (strcmp(token,"/file") == 0) {
         char * nomfichier = (char *) malloc(20*sizeof(char));
-        char * taillef = (char *) malloc(5*sizeof(char));
         token = strtok(NULL, " ");
         if (token == NULL) {
                 perror("Vous devez mettre le nom du fichier après /file !");
             }
         strcpy(nomfichier, token);
 
-        char * taillefi = (char *) malloc(5*sizeof(char));
-        token = strtok(NULL, " ");
-        if (token == NULL) {
-                perror("Vous devez mettre la taille du fichier après son nom !");
-            }
-        strcpy(taillefi, token);
+        char *pos = strchr(nomfichier, '\n');
+        if (pos != NULL) {
+            *pos = '\0';
+        }
 
         envoi_fichier(dS, nomfichier);
+        free(nomfichier);
+    }
+    else if (strcmp(token,"/Sfile") == 0){
+        char * nomfichier = (char *) malloc(20*sizeof(char));
+        token = strtok(NULL, " ");
+        if (token == NULL) {
+                perror("Vous devez mettre le nom du fichier après /Sfile !");
+            }
+        strcpy(nomfichier, token);
+
+        char *pos = strchr(nomfichier, '\n');
+        if (pos != NULL) {
+            *pos = '\0';
+        }
+
+        envoi_message(dS, "/Sfile");
+        envoi_message(dS, nomfichier);
+        char * taillefichier = (char *) malloc(5*sizeof(char));
+        ssize_t rcv = recv(dS, taillefichier, 5, 0);
+        if (rcv == -1) {
+            perror("Erreur réception message");
+            exit(0);
+        }
+        if (rcv == 0) {
+            printf("Non connecté au serveur, fin du thread\n");
+            exit(0);
+        }
+
+        long taillef = atoi(taillefichier);
+        recup_fichier(dS, nomfichier, taillef);
     }
     else envoi_message(dS, m);
 
@@ -146,6 +173,7 @@ void envoi_fichier(int socket, char * nomfichier) {
     else {
         perror("Problème dans la lecture du fichier");
     }
+
     char * taillef = (char *) malloc(5*sizeof(char));
     char * message = (char *) malloc(10*sizeof(char));
     sprintf(taillef, "%ld", taillefichier);
@@ -155,11 +183,28 @@ void envoi_fichier(int socket, char * nomfichier) {
     envoi_message(socket, taillef);
     while(fgets(data, SIZE, fp) != NULL) {
         if (send(socket, data, SIZE, 0) == -1) {
-        perror("[-]Error in sending file.");
-        exit(1);
+            perror("Erreur dans l'envoi du fichier");
+            exit(1);
+        }
+        bzero(data, SIZE);
     }
-    bzero(data, SIZE);
-  }
+}
+
+void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
+    FILE *fp;
+    long n=0;
+    char buffer[SIZE];
+    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomf, "Public/");
+    strcat(nomf, nomfichier);
+    fp = fopen(nomf, "w");
+    while (n < taillefichier) {
+        n += recv(dSC, buffer, SIZE, 0);
+        printf("n : %ld", n); //debug
+        fprintf(fp, "%s", buffer);
+        bzero(buffer, SIZE);
+    }    
+    fclose(fp);
 }
 
 void signal_handleCli(int sig){
