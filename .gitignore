@@ -1,2 +1,5 @@
 Client/client
+Client/Public/*
+
 Serveur/serveur
+Serveur/Public/*
