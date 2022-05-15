@@ -94,15 +94,28 @@ int chercher_place();
 char * lire_manuel();
 
 /**
- * @brief Envoie le contenu du répertoire Public (source: https://askcodez.com/implementation-de-la-commande-ls-al-en-c.html)
+ * @brief Envoie le contenu du répertoire Public (inspiré de: https://askcodez.com/implementation-de-la-commande-ls-al-en-c.html)
  * 
  * @param numclient Indice du client dans le tableau
  */
 void envoi_repertoire(int numclient);
 
-void recup_fichier(int dSC, char * nomfichier, long taillefichier);
+/**
+ * @brief Récupère un fichier envoyé par le client
+ * 
+ * @param socket Socket du client
+ * @param nomfichier Nom du fichier à recevoir
+ * @param taillefichier Taille du fichier à recevoir
+ */
+void recup_fichier(int socket, char * nomfichier, long taillefichier);
 
-void envoi_fichier(int socket, char * nomfichier, long taillefichier);
+/**
+ * @brief Envoi d'un fichier à un client
+ * 
+ * @param numclient Indice du client dans le tableau
+ * @param nomfichier Nom du fichier à recevoir
+ */
+void envoi_fichier(int numclient, char * nomfichier);
 
 /**
  * @brief Analyse le message pour y reconnaître une commande
@@ -116,3 +129,11 @@ commande gestion_commande(char * msg);
  * @brief Gestion du signal CTRL C serveur
  */
 void signal_handle(int sig);
+
+/**
+ * @brief Fonction de calcul de la taille d'un entier
+ * 
+ * @param nb Entier quelconque
+ * @return Le nombre de chiffres qui compose l'entier nb
+ */
+int tailleint(int nb);

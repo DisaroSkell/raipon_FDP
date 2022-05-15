@@ -94,8 +94,15 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) {
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) { // On récupère un fichier de la part du client
             recup_fichier(clients[numclient].socket, cmd.nomf, cmd.taillef);
+        }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "rf") == 0) { // On envoie un fichier au client
+            if (cmd.taillef == -1) { // C'est comme ça qu'on détecte si aucun fichier n'est mis quand on est un shalg :)
+                envoi_repertoire(numclient);
+            } else {
+                envoi_fichier(numclient, cmd.nomf);
+            }
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
@@ -256,7 +263,7 @@ void envoi_repertoire(int numclient) {
     }
 }
 
-void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
+void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     FILE *fp;
     char buffer[SIZE];
 
@@ -268,8 +275,8 @@ void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
     fp = fopen(cheminf, "w");
     
     ssize_t rcv_f;
-    while (ftell(fp) < taillefichier) { // On reçoit un \n tout seul à la fin de la lecture du fichier
-        rcv_f = recv(dSC, buffer, SIZE, 0);
+    while (ftell(fp) < taillefichier) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
+        rcv_f = recv(socket, buffer, SIZE, 0);
         if (rcv_f == -1) {
             perror("Erreur de reception du fichier !");
             return;
@@ -286,27 +293,58 @@ void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
     printf("Fin de la réception du fichier %s\n", nomfichier);
 }
 
-void envoi_fichier(int socket, char * nomfichier, long taillefichier) {
+void envoi_fichier(int numclient, char * nomfichier) {
     FILE *fp;
-    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
-    strcpy(nomf, "Public/");
-    strcat(nomf, nomfichier);
-    fp = fopen(nomf, "r");
+
+    // On met le chemin relatif du fichier dans un string
+    char * nomchemin = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomchemin, "Public/");
+    strcat(nomchemin, nomfichier);
+
+    fp = fopen(nomchemin, "r");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier");
-        exit(1);
+        return;
     }
 
     char data[SIZE] = {0};
 
+    long int taillefichier;
+
+    if (fp) {
+        fseek (fp, 0, SEEK_END);
+        taillefichier = ftell (fp);
+        fseek (fp, 0, SEEK_SET);
+    } else {
+        perror("Problème dans la lecture du fichier");
+    }
+
+    // La commande sera "/rf [nom fichier] [taille fichier]\0"
+    // D'où les additions:
+    char * commande = (char *) malloc((3 + strlen(nomfichier) + 1 + tailleint(taillefichier) + 1) * sizeof(char));
+
+    strcpy(commande, "/ef ");
+    strcat(commande, nomfichier);
+    strcat(commande, " ");
+
+    char * taillef = (char *) malloc((tailleint(taillefichier) + 1) * sizeof(char));
+    sprintf(taillef, "%ld", taillefichier);
+    strcat(commande, taillef);
+    
+    envoi_message(clients[numclient].socket, commande);
+
+    // Après avoir envoyé la commande, on envoie le fichier
     while(fgets(data, SIZE, fp) != NULL) {
-        printf("data : %s", data);
-        if (send(socket, data, SIZE, 0) == -1) {
+        ssize_t envoi = send(clients[numclient].socket, data, SIZE, 0);
+        if (envoi == -1) {
             perror("Erreur dans l'envoi du fichier");
-            exit(1);
+            return;
         }
+
         bzero(data, SIZE);
     }
+
+    printf("Fichier envoyé à %s !\n", clients[numclient].pseudo);
 }
 
 commande gestion_commande(char * slashmsg) {
@@ -314,7 +352,9 @@ commande gestion_commande(char * slashmsg) {
     result.id_op = 0;
     result.nom_cmd = "";
     result.message = "";
-    result.user = 0;
+    result.user = "";
+    result.nomf = "";
+    result.taillef = 0;
 
     if (memcmp(slashmsg, "/", strlen("/")) == 0) {
         result.id_op = 1;
@@ -382,7 +422,7 @@ commande gestion_commande(char * slashmsg) {
             strcpy(result.nom_cmd, "manuel");
         }
         else if (strcmp(cmd,"ef") == 0) {
-            result.nom_cmd = (char *) malloc(strlen("ef")*sizeof(char));
+            result.nom_cmd = (char *) malloc(3*sizeof(char));
             strcpy(result.nom_cmd, "ef");
 
             token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
@@ -406,6 +446,26 @@ commande gestion_commande(char * slashmsg) {
 
             result.taillef = atoi(token);
         }
+        else if (strcmp(cmd,"rf") == 0 || strcmp(cmd,"rf\n") == 0) {
+            result.nom_cmd = (char *) malloc(3*sizeof(char));
+            strcpy(result.nom_cmd, "rf");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
+
+            if (token == NULL) { // S'il n'y en a pas on enverra la liste des fichiers
+                result.taillef = -1;
+            } else { // On donne le nom du fichier
+                // On doit évidemment enlever le \n
+                token = strtok(token, "\n");
+
+                if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant
+                    result.taillef = -1;
+                } else {
+                    result.nomf = (char *) malloc(strlen(token)*sizeof(char));
+                    strcpy(result.nomf, token);
+                }
+            }
+        }
         else {
             perror("Commande non reconnue");
             result.id_op = -1;
@@ -424,4 +484,17 @@ void signal_handle(int sig){
 
     printf("Fin du programme\n");
     exit(0);
+}
+
+int tailleint(int nb) {
+    int nombre = nb;
+    int resultat = 1;
+
+    // On compte les chiffres en divisant par 10 à chaque fois
+    while (nombre >= 10) {
+        nombre = nombre/10;
+        resultat++;
+    }
+
+    return resultat;
 }

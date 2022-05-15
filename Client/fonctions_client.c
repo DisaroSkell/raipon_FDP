@@ -38,8 +38,35 @@ void * thread_reception(void * argpointer){
             exit(0);
         }
         else {
-            printf("Message reçu :\n");
-            printf("%s\n", msg);
+            if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) {
+                char * msgmodif = (char *) malloc((strlen(msg)-4)*sizeof(char));
+                strcpy(msgmodif, strtok(msg, "/")); // On enlève le début du message
+                
+                char * token = strtok(msgmodif, " "); // On s'en fiche un peu du début
+                token = strtok(NULL, " "); // On regarde le nom du fichier
+
+                if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                    perror("Il manque un nom de fichier après /ef !");
+                    continue;;
+                }
+                
+                char * nomf = (char *) malloc(strlen(token)*sizeof(char));
+                strcpy(nomf, token);
+
+                token = strtok(NULL, " "); // On regarde la suite, ici : la taille du fichier
+
+                if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                    perror("Il manque la taille du fichier après son nom !");
+                    continue;
+                }
+
+                int taillef = atoi(token);
+
+                recup_fichier(args->socket, nomf, taillef);
+            } else {
+                printf("Message reçu :\n");
+                printf("%s\n", msg);
+            }
         }
     }
 }
@@ -166,21 +193,34 @@ void envoi_fichier(int socket, char * nomfichier) {
     printf("Fichier envoyé !\n");
 }
 
-void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
+void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     FILE *fp;
-    long n=0;
     char buffer[SIZE];
-    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
-    strcpy(nomf, "Public/");
-    strcat(nomf, nomfichier);
-    fp = fopen(nomf, "w");
-    while (n < taillefichier) {
-        n += recv(dSC, buffer, SIZE, 0);
-        printf("n : %ld", n); //debug
+
+    // On met le chemin relatif du fichier dans un string
+    char * cheminf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(cheminf, "Public/");
+    strcat(cheminf, nomfichier);
+    
+    fp = fopen(cheminf, "w");
+    
+    ssize_t rcv_f;
+    while (ftell(fp) < taillefichier) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
+        rcv_f = recv(socket, buffer, SIZE, 0);
+        if (rcv_f == -1) {
+            perror("Erreur de reception du fichier !");
+            return;
+        }
+        if (rcv_f == 0) {
+            perror("Erreur de connexion au client !");
+            return;
+        }
+
         fprintf(fp, "%s", buffer);
-        bzero(buffer, SIZE);
-    }    
+    }
+
     fclose(fp);
+    printf("Fin de la réception du fichier %s\n", nomfichier);
 }
 
 void signal_handleCli(int sig){

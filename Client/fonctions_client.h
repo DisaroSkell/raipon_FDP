@@ -45,7 +45,14 @@ void print_repertoire();
  */
 void envoi_fichier(int socket, char * nomfichier);
 
-void recup_fichier(int dSC, char * nomfichier, long taillefichier);
+/**
+ * @brief Récupère un fichier depuis le socket
+ * 
+ * @param socket Socket de l'envoyeur
+ * @param nomfichier Nom du fichier à recevoir
+ * @param taillefichier Taille du fichier à recevoir
+ */
+void recup_fichier(int socket, char * nomfichier, long taillefichier);
 
 /**
  * @brief Fonction de signal CTRL C client
