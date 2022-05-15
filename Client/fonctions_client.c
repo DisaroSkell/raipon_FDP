@@ -159,10 +159,11 @@ void envoi_fichier(int socket, char * nomfichier) {
             perror("Erreur dans l'envoi du fichier");
             return;
         }
-        printf("Envoi d'un bout de data: %s\n", data);
 
         bzero(data, SIZE);
     }
+
+    printf("Fichier envoyé !\n");
 }
 
 void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
