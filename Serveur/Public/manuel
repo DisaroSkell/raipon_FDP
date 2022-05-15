@@ -6,3 +6,15 @@
 
 - /manuel
     Globalement ce que vous venez de faire: affiche la liste des commandes
+
+- /fichier
+    Vous montre le contenu de votre répertoire d'envoi
+
+- /file [nom fichier]
+    Envoie un fichier de votre répertoire au serveur
+
+- /fichierServeur
+    Vous montre les fichiers disponibles
+
+- /Sfile
+    Récupère un fichier du serveur
