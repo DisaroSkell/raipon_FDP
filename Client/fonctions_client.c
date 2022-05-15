@@ -128,7 +128,6 @@ void envoi_fichier(int socket, char * nomfichier) {
 
     char data[SIZE] = {0};
 
-    char * buffer = 0;
     long int taillefichier;
 
     if (fp) {
