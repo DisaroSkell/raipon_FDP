@@ -65,7 +65,6 @@ void* traitement_serveur(void * paramspointer){
         printf("%d: Message reçu : %s\n", numclient, msg);
 
         commande cmd = gestion_commande(msg);
-        printf("Commande reçue %d\n",cmd.id_op);
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
             int destinataire = chercher_client(cmd.user);
 
@@ -95,49 +94,8 @@ void* traitement_serveur(void * paramspointer){
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur");
         }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fichierServeur") == 0) {
-            envoi_repertoire(numclient);
-        }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "file") == 0) {
-            char * nomfichier = reception_message(numclient);
-            long taillefichier = atoi(reception_message(numclient));
-            recup_fichier(clients[numclient].socket, nomfichier, taillefichier);
-            free(nomfichier);
-        }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "Sfile") == 0) {
-            char * nomfichier = reception_message(numclient);
-            FILE *fp;
-            char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
-            strcpy(nomf, "Public/");
-            strcat(nomf, nomfichier);
-
-            fp = fopen(nomf, "r");
-            if (fp == NULL) {
-                perror("Erreur durant la lecture du fichier");
-                exit(1);
-            }
-
-            char * buffer = 0;
-            long taillefichier;
-
-            if (fp) {
-                fseek (fp, 0, SEEK_END);
-                taillefichier = ftell (fp);
-                fseek (fp, 0, SEEK_SET);
-                buffer = malloc (taillefichier);
-                if (buffer) {
-                    fread (buffer, 1, taillefichier, fp);
-                }
-            }
-
-            else {
-                perror("Problème dans la lecture du fichier");
-            }
-
-            char * taillef = (char *) malloc(5*sizeof(char));
-            sprintf(taillef, "%ld", taillefichier);
-            envoi_direct(numclient, taillef, "Serveur");
-            recup_fichier(clients[numclient].socket, nomfichier, taillefichier);
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) {
+            recup_fichier(clients[numclient].socket, cmd.nomf, cmd.taillef);
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur");
@@ -300,16 +258,32 @@ void envoi_repertoire(int numclient) {
 
 void recup_fichier(int dSC, char * nomfichier, long taillefichier) {
     FILE *fp;
-    long n=0;
     char buffer[SIZE];
-    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
-    strcpy(nomf, "Public/");
-    strcat(nomf, nomfichier);
-    fp = fopen(nomf, "w");
-    n += (recv(dSC, buffer, SIZE, 0));
-    fprintf(fp, "%s", buffer);
-    printf("n : %ld", n);
+
+    // On met le chemin relatif du fichier dans un string
+    char * cheminf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(cheminf, "Public/");
+    strcat(cheminf, nomfichier);
+    
+    fp = fopen(cheminf, "w");
+    
+    ssize_t rcv_f;
+    while (ftell(fp) < taillefichier) { // On reçoit un \n tout seul à la fin de la lecture du fichier
+        rcv_f = recv(dSC, buffer, SIZE, 0);
+        if (rcv_f == -1) {
+            perror("Erreur de reception du fichier !");
+            return;
+        }
+        if (rcv_f == 0) {
+            perror("Erreur de connexion au client !");
+            return;
+        }
+
+        fprintf(fp, "%s", buffer);
+    }
+
     fclose(fp);
+    printf("Fin de la réception du fichier %s\n", nomfichier);
 }
 
 void envoi_fichier(int socket, char * nomfichier, long taillefichier) {
@@ -397,7 +371,6 @@ commande gestion_commande(char * slashmsg) {
                 token = strtok(NULL, " ");
             }
 
-            result.message = (char *) malloc(strlen(mp)*sizeof(char));
             result.message = mp;
         }
         else if (strcmp(cmd,"fin\n") == 0) {
@@ -408,17 +381,30 @@ commande gestion_commande(char * slashmsg) {
             result.nom_cmd = (char *) malloc(strlen("manuel")*sizeof(char));
             strcpy(result.nom_cmd, "manuel");
         }
-        else if (strcmp(cmd,"fichierServeur\n") == 0) {
-            result.nom_cmd = (char *) malloc(strlen("fichierServeur")*sizeof(char));
-            strcpy(result.nom_cmd, "fichierServeur");
-        }
-        else if (strcmp(cmd,"file") == 0) {
-            result.nom_cmd = (char *) malloc(strlen("file")*sizeof(char));
-            strcpy(result.nom_cmd, "file");
-        }
-        else if (strcmp(cmd,"Sfile") == 0) {
-            result.nom_cmd = (char *) malloc(strlen("Sfile")*sizeof(char));
-            strcpy(result.nom_cmd, "Sfile");
+        else if (strcmp(cmd,"ef") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("ef")*sizeof(char));
+            strcpy(result.nom_cmd, "ef");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
+
+            if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                perror("Vous devez mettre le nom de fichier après /ef !");
+                result.id_op = -1;
+                return result;
+            }
+            
+            result.nomf = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(result.nomf, token);
+
+            token = strtok(NULL, " "); // On regarde la suite, ici : la taille du fichier
+
+            if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                perror("Vous devez mettre la taille du fichier après son nom !");
+                result.id_op = -1;
+                return result;
+            }
+
+            result.taillef = atoi(token);
         }
         else {
             perror("Commande non reconnue");

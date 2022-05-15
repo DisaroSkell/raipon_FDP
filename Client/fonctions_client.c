@@ -46,67 +46,35 @@ void * thread_reception(void * argpointer){
 
 int lecture_message(int dS) {
     printf("Entrez un message\n");
-    char * m = (char *) malloc(50*sizeof(char));
-    fgets(m, 30*sizeof(char), stdin);
-    char * token = strtok(m, " "); // On segmente la commande avec les espaces
 
-    if (strcmp(m,"/fichier\n") == 0) {
-        envoi_repertoire(dS);
-    }
-    else if (strcmp(token,"/file\n") == 0) {
-        perror("Vous devez mettre le nom du fichier après /file !");
-    }
-    else if (strcmp(token,"/file") == 0) {
-        char * nomfichier = (char *) malloc(20*sizeof(char));
-        token = strtok(NULL, " ");
+    // On lit le message dans le terminal
+    int taille = 30;
+    char * m = (char *) malloc(taille*sizeof(char));
+    fgets(m, taille*sizeof(char), stdin);
+
+    if (strcmp(m, "/envoifichier\n") == 0 || strcmp(m, "/ef\n") == 0) {
+        // On montre au client les fichiers disponibles à l'envoi
+        print_repertoire();
+    } else if (strncmp(m, "/envoificher ", 13) == 0 || strncmp(m, "/ef ", 4) == 0) {
+        // On envoie un ficher
+        char * token = strtok(m, " ");
+        token = strtok(NULL, " "); // On regarde le nom de fichier qui est censé se situer juste après le nom de commande
+
         if (token == NULL) {
-                perror("Vous devez mettre le nom du fichier après /file !");
-            }
-        strcpy(nomfichier, token);
-
-        char *pos = strchr(nomfichier, '\n');
-        if (pos != NULL) {
-            *pos = '\0';
+            // On est gentil, on fait comme s'il demandait la liste des fichiers :)
+            print_repertoire();
         }
+        else {
+            token = strtok(token, "\n");
 
-        envoi_fichier(dS, nomfichier);
-        free(nomfichier);
-    }
-    else if (strcmp(token,"/Sfile") == 0){
-        char * nomfichier = (char *) malloc(20*sizeof(char));
-        token = strtok(NULL, " ");
-        if (token == NULL) {
-                perror("Vous devez mettre le nom du fichier après /Sfile !");
-            }
-        strcpy(nomfichier, token);
-
-        char *pos = strchr(nomfichier, '\n');
-        if (pos != NULL) {
-            *pos = '\0';
+            envoi_fichier(dS, token);
         }
-
-        envoi_message(dS, "/Sfile");
-        envoi_message(dS, nomfichier);
-        char * taillefichier = (char *) malloc(5*sizeof(char));
-        ssize_t rcv = recv(dS, taillefichier, 5, 0);
-        if (rcv == -1) {
-            perror("Erreur réception message");
-            exit(0);
-        }
-        if (rcv == 0) {
-            printf("Non connecté au serveur, fin du thread\n");
-            exit(0);
-        }
-
-        long taillef = atoi(taillefichier);
-        recup_fichier(dS, nomfichier, taillef);
     }
     else envoi_message(dS, m);
 
     return strcmp(m, "/fin\n") != 0;
 }
 
-// Envoie par le socket
 int envoi_message(int socket, char * msg) {
     int resultat = 0;
     
@@ -132,7 +100,7 @@ int envoi_message(int socket, char * msg) {
     return resultat;
 }
 
-void envoi_repertoire(int socket) {
+void print_repertoire() {
     DIR *mydir;
     struct dirent *myfile;
     struct stat mystat;
@@ -146,46 +114,54 @@ void envoi_repertoire(int socket) {
 
 void envoi_fichier(int socket, char * nomfichier) {
     FILE *fp;
-    char * nomf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
-    strcpy(nomf, "Public/");
-    strcat(nomf, nomfichier);
-    fp = fopen(nomf, "r");
+
+    // On met le chemin relatif du fichier dans un string
+    char * nomchemin = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomchemin, "Public/");
+    strcat(nomchemin, nomfichier);
+
+    fp = fopen(nomchemin, "r");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier");
-        exit(1);
+        return;
     }
-    int n;
+
     char data[SIZE] = {0};
 
     char * buffer = 0;
-    long taillefichier;
+    long int taillefichier;
 
     if (fp) {
         fseek (fp, 0, SEEK_END);
         taillefichier = ftell (fp);
         fseek (fp, 0, SEEK_SET);
-        buffer = malloc (taillefichier);
-        if (buffer) {
-            fread (buffer, 1, taillefichier, fp);
-        }
-    }
-
-    else {
+    } else {
         perror("Problème dans la lecture du fichier");
     }
 
-    char * taillef = (char *) malloc(5*sizeof(char));
-    char * message = (char *) malloc(10*sizeof(char));
+    // La commande sera "/ef [nom fichier] [taille fichier]\0"
+    // D'où les additions:
+    char * commande = (char *) malloc((3 + strlen(nomfichier) + 1 + tailleint(taillefichier) + 1) * sizeof(char));
+
+    strcpy(commande, "/ef ");
+    strcat(commande, nomfichier);
+    strcat(commande, " ");
+
+    char * taillef = (char *) malloc((tailleint(taillefichier) + 1) * sizeof(char));
     sprintf(taillef, "%ld", taillefichier);
-    strcpy(message, "/file");
-    envoi_message(socket, message);
-    envoi_message(socket, nomfichier);
-    envoi_message(socket, taillef);
+    strcat(commande, taillef);
+    
+    envoi_message(socket, commande);
+
+    // Après avoir envoyé la commande, on envoie le fichier
     while(fgets(data, SIZE, fp) != NULL) {
-        if (send(socket, data, SIZE, 0) == -1) {
+        ssize_t envoi = send(socket, data, SIZE, 0);
+        if (envoi == -1) {
             perror("Erreur dans l'envoi du fichier");
-            exit(1);
+            return;
         }
+        printf("Envoi d'un bout de data: %s\n", data);
+
         bzero(data, SIZE);
     }
 }
@@ -212,4 +188,17 @@ void signal_handleCli(int sig){
 
     printf("Fin du programme\n");
     exit(0);
+}
+
+int tailleint(int nb) {
+    int nombre = nb;
+    int resultat = 1;
+
+    // On compte les chiffres en divisant par 10 à chaque fois
+    while (nombre >= 10) {
+        nombre = nombre/10;
+        resultat++;
+    }
+
+    return resultat;
 }

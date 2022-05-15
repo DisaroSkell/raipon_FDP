@@ -32,8 +32,17 @@ int lecture_message(int dS);
  */
 int envoi_message(int socket, char * msg);
 
-void envoi_repertoire(int socket);
+/**
+ * @brief Affiche le contenu du répertoire Public/ dans le terminal
+ */
+void print_repertoire();
 
+/**
+ * @brief Envoie le contenu du fichier Public/nomfichier au socket
+ * 
+ * @param socket Socket du destinataire
+ * @param nomfichier Nom du fichier à envoyer (situé dans Public/)
+ */
 void envoi_fichier(int socket, char * nomfichier);
 
 void recup_fichier(int dSC, char * nomfichier, long taillefichier);
@@ -42,3 +51,11 @@ void recup_fichier(int dSC, char * nomfichier, long taillefichier);
  * @brief Fonction de signal CTRL C client
  */
 void signal_handleCli(int sig);
+
+/**
+ * @brief Fonction de calcul de la taille d'un entier
+ * 
+ * @param nb Entier quelconque
+ * @return Le nombre de chiffres qui compose l'entier nb
+ */
+int tailleint(int nb);

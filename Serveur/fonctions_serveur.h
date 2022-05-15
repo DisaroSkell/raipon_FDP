@@ -17,14 +17,21 @@ typedef struct traitement_params {
 }traitement_params;
 
 /**
- * @brief Structure pour une commande: id, nom, message, destinataire (dans le cadre du mp)
+ * @brief Structure pour une commande
  */
 typedef struct commande {
   // L'id de la commande: -1 = commande / non reconnue; 0 = pas de commande; 1 = "/";
   int id_op;
+
   char * nom_cmd; // Le nom de la commande qui suit l'opérateur
-  char * message;
-  char * user;
+
+  // Pour la commande mp
+  char * message; // Message à envoyer
+  char * user; // Destinataire
+
+  // Pour les commandes ef et rf
+  char * nomf; // Nom du fichier
+  int taillef; // Taille du fichier
 }commande;
 
 /**
