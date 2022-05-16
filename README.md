@@ -13,6 +13,6 @@ Pour compiler les fichiers, placez vous à la racine du projet et faites: ./comp
 
 À la racine du fichier:
 
-* Pour lancer le fichier client : ./Client/client [Pseudonyme] [IPServeur] [port]
+* Pour lancer le fichier client, placez vous dans le fichier Client/ : ./client [Pseudonyme] [IPServeur] [port]
 
-* Pour lancer le fichier serveur : ./Serveur/serveur [port]
+* Pour lancer le fichier serveur, placez vous dans le fichier Serveur/ : ./serveur [port]
