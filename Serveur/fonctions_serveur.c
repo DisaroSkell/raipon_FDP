@@ -754,6 +754,24 @@ void envoi_repertoire(int numclient) {
         envoi_direct(numclient,msg, "Serveur", -10);
         free(msg);
     }
+    closedir(mydir);
+}
+
+void supprimer_fichier(char * nomfichier) {
+    DIR *mydir;
+    struct dirent *myfile;
+    struct stat mystat;
+    char * nomf;
+    mydir = opendir("Public");
+    while ((myfile = readdir(mydir)) != NULL) {
+        nomf = (char *) malloc(30*sizeof(char));
+        stat(myfile->d_name, &mystat);
+        sprintf(nomf,"%s",myfile->d_name);
+        if (strcmp(nomfichier,nomf)) {
+            remove(myfile->d_name);
+        }
+        free(nomf);
+    }
 }
 
 void recup_fichier(int socket, char * nomfichier, long taillefichier) {
@@ -765,6 +783,9 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     strcpy(cheminf, "Public/");
     strcat(cheminf, nomfichier);
     
+    if (fopen(cheminf, "r") != NULL){
+        strcat(cheminf, "+1");
+    }
     fp = fopen(cheminf, "w");
     
     ssize_t rcv_f;
@@ -772,10 +793,12 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
         rcv_f = recv(socket, buffer, SIZE, 0);
         if (rcv_f == -1) {
             perror("Erreur de reception du fichier !");
+            supprimer_fichier(nomfichier);
             return;
         }
         if (rcv_f == 0) {
             perror("Erreur de connexion au client !");
+            supprimer_fichier(nomfichier);
             return;
         }
 
