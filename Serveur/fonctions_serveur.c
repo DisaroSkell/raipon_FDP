@@ -757,23 +757,6 @@ void envoi_repertoire(int numclient) {
     closedir(mydir);
 }
 
-void supprimer_fichier(char * nomfichier) {
-    DIR *mydir;
-    struct dirent *myfile;
-    struct stat mystat;
-    char * nomf;
-    mydir = opendir("Public");
-    while ((myfile = readdir(mydir)) != NULL) {
-        nomf = (char *) malloc(30*sizeof(char));
-        stat(myfile->d_name, &mystat);
-        sprintf(nomf,"%s",myfile->d_name);
-        if (strcmp(nomfichier,nomf)) {
-            remove(myfile->d_name);
-        }
-        free(nomf);
-    }
-}
-
 void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     FILE *fp;
     char buffer[SIZE];
@@ -782,10 +765,25 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     char * cheminf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
     strcpy(cheminf, "Public/");
     strcat(cheminf, nomfichier);
+
+    char * mess = (char *) malloc(50*sizeof(char));
+    int fb;
     
     if (fopen(cheminf, "r") != NULL){
-        strcat(cheminf, "+1");
+        strcpy(mess, "Nom de fichier déjà utilisé");
+        fb = send(socket, mess, 50*sizeof(char), 0);
+        if (fb == -1){
+            perror("Erreur dans l'envoi du feedback");
+        }
+        return;
     }
+    strcpy(mess, "ok");
+    fb = send(socket, mess, 50*sizeof(char), 0);
+    if (fb == -1){
+            perror("Erreur dans l'envoi du feedback");
+            return;
+        }
+
     fp = fopen(cheminf, "w");
     
     ssize_t rcv_f;
@@ -793,12 +791,18 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
         rcv_f = recv(socket, buffer, SIZE, 0);
         if (rcv_f == -1) {
             perror("Erreur de reception du fichier !");
-            supprimer_fichier(nomfichier);
+            int ret = remove(cheminf);
+            if(ret != 0) {
+                printf("Erreur de suppression du fichier");
+            }
             return;
         }
         if (rcv_f == 0) {
             perror("Erreur de connexion au client !");
-            supprimer_fichier(nomfichier);
+            int ret = remove(cheminf);
+            if(ret != 0) {
+                printf("Erreur de suppression du fichier");
+            }
             return;
         }
 
@@ -820,6 +824,7 @@ void envoi_fichier(int numclient, char * nomfichier) {
     fp = fopen(nomchemin, "r");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier");
+        envoi_direct(numclient, "Fichier non trouvé\n", "Serveur");
         return;
     }
 

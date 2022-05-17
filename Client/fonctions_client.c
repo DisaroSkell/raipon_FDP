@@ -178,6 +178,17 @@ void envoi_fichier(int socket, char * nomfichier) {
     
     envoi_message(socket, commande);
 
+    char * mess = (char *) malloc(50*sizeof(char));
+    int rep = recv(socket, mess, 50*sizeof(char), 0); //Feedback du serveur "ok" ou mess d'erreur
+    if (rep == -1){
+            perror("Erreur dans la réception du feedback");
+        }
+
+    if (strcmp(mess,"ok") != 0) { 
+        perror(mess);
+        return;
+    }
+
     // Après avoir envoyé la commande, on envoie le fichier
     while(fgets(data, SIZE, fp) != NULL) {
         ssize_t envoi = send(socket, data, SIZE, 0);
