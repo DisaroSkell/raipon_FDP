@@ -11,8 +11,11 @@
 #include <dirent.h>
 
 int socketServeur;
+char * IPServeur;
+int portServeur;
 
 void * thread_reception(void * argpointer){
+
     argsrec * args = argpointer;
     int len = 0;
     while(!(args->fin)) {
@@ -38,6 +41,7 @@ void * thread_reception(void * argpointer){
         }
         else {
             if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) {
+
                 char * msgmodif = (char *) malloc((strlen(msg)-4)*sizeof(char));
                 strcpy(msgmodif, strtok(msg, "/")); // On enlève le début du message
                 
@@ -61,7 +65,24 @@ void * thread_reception(void * argpointer){
 
                 int taillef = atoi(token);
 
-                recup_fichier(args->socket, nomf, taillef);
+                pthread_t t;
+                argsfichier argsf;
+
+                ssize_t rcvNum = recv(args->socket, &(argsf.numc), (3*sizeof(int)), 0);
+                if (rcvNum == -1) {
+                    perror("Erreur réception numéro client");
+                    exit(0);
+                }
+                if (rcvNum == 0) {
+                    printf("Non connecté au serveur, fin du thread\n");
+                    exit(0);
+                }
+
+                argsf.socket = args->socket;
+                argsf.nomf = nomf;
+                argsf.taillef = taillef;
+                argsf.action = 0;
+                int thread = pthread_create(&t,NULL,thread_fichier,&argsf);
             } else {
                 printf("\n");
                 printf("%s", msg);
@@ -92,8 +113,13 @@ int lecture_message(int dS) {
         }
         else {
             token = strtok(token, "\n");
+            pthread_t t;
+            argsfichier argsf;
 
-            envoi_fichier(dS, token);
+            argsf.socket = dS;
+            argsf.nomf = token;
+            argsf.action = 1;
+            int thread = pthread_create(&t,NULL,thread_fichier,&argsf);
         }
     }
     else envoi_message(dS, m);
@@ -138,7 +164,42 @@ void print_repertoire() {
     }
 }
 
-void envoi_fichier(int socket, char * nomfichier) {
+void * thread_fichier(void * argpointer) {
+    argsfichier * args = argpointer;
+
+    if (args->action == 1) {
+        envoi_fichier(args->socket, args->nomf);
+        pthread_exit(0);
+    }
+
+    int dS = socket(PF_INET, SOCK_STREAM, 0);
+    if (dS == -1){
+        perror("Erreur dans la création de la socket");
+        exit(0);
+    }
+    printf("Socket Créé\n");
+
+    struct sockaddr_in aS;
+    aS.sin_family = AF_INET;
+    inet_pton(AF_INET,"192.168.1.32",&(aS.sin_addr));
+    aS.sin_port = htons(8888);
+    socklen_t lgA = sizeof(struct sockaddr_in);
+
+    int co = connect(dS, (struct sockaddr *) &aS, lgA);
+    if (co == -1){
+        perror("Erreur envoi demmande de connexion");
+        exit(0);
+    }
+
+    printf("Socket Connecté\n");
+
+    recup_fichier(dS, args->nomf, args->taillef);
+
+    pthread_exit(0);
+
+}
+
+void envoi_fichier(int socketMessage, char * nomfichier) {
     FILE *fp;
 
     // On met le chemin relatif du fichier dans un string
@@ -176,10 +237,31 @@ void envoi_fichier(int socket, char * nomfichier) {
     sprintf(taillef, "%ld", taillefichier);
     strcat(commande, taillef);
     
-    envoi_message(socket, commande);
+    envoi_message(socketMessage, commande);
+
+    int dS = socket(PF_INET, SOCK_STREAM, 0);
+    if (dS == -1){
+        perror("Erreur dans la création de la socket");
+        exit(0);
+    }
+    printf("Socket Créé\n");
+
+    struct sockaddr_in aS;
+    aS.sin_family = AF_INET;
+    inet_pton(AF_INET,"192.168.1.32",&(aS.sin_addr));
+    aS.sin_port = htons(8888);
+    socklen_t lgA = sizeof(struct sockaddr_in);
+
+    int co = connect(dS, (struct sockaddr *) &aS, lgA);
+    if (co == -1){
+        perror("Erreur envoi demmande de connexion");
+        exit(0);
+    }
+
+    printf("Socket Connecté\n");
 
     char * mess = (char *) malloc(50*sizeof(char));
-    int rep = recv(socket, mess, 50*sizeof(char), 0); //Feedback du serveur "ok" ou mess d'erreur
+    int rep = recv(socketMessage, mess, 50*sizeof(char), 0); //Feedback du serveur "ok" ou mess d'erreur
     if (rep == -1){
             perror("Erreur dans la réception du feedback");
         }
@@ -191,7 +273,7 @@ void envoi_fichier(int socket, char * nomfichier) {
 
     // Après avoir envoyé la commande, on envoie le fichier
     while(fgets(data, SIZE, fp) != NULL) {
-        ssize_t envoi = send(socket, data, SIZE, 0);
+        ssize_t envoi = send(dS, data, SIZE, 0);
         if (envoi == -1) {
             perror("Erreur dans l'envoi du fichier");
             return;
@@ -203,20 +285,21 @@ void envoi_fichier(int socket, char * nomfichier) {
     printf("Fichier envoyé !\n");
 }
 
-void recup_fichier(int socket, char * nomfichier, long taillefichier) {
+void recup_fichier(int dS, char * nomf, long taillef) {
+    
     FILE *fp;
     char buffer[SIZE];
 
     // On met le chemin relatif du fichier dans un string
-    char * cheminf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    char * cheminf = (char *) malloc((strlen(nomf)+7)*sizeof(char));
     strcpy(cheminf, "Public/");
-    strcat(cheminf, nomfichier);
+    strcat(cheminf, nomf);
     
     fp = fopen(cheminf, "w");
     
     ssize_t rcv_f;
-    while (ftell(fp) < taillefichier) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
-        rcv_f = recv(socket, buffer, SIZE, 0);
+    while (ftell(fp) < taillef) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
+        rcv_f = recv(dS, buffer, SIZE, 0);
         if (rcv_f == -1) {
             perror("Erreur de reception du fichier !");
             return;
@@ -230,7 +313,7 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     }
 
     fclose(fp);
-    printf("Fin de la réception du fichier %s\n", nomfichier);
+    printf("Fin de la réception du fichier %s\n", nomf);
 }
 
 void signal_handleCli(int sig){

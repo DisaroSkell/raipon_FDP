@@ -10,6 +10,8 @@
 #include <signal.h>
 
 extern int socketServeur;
+extern char * IPServeur;
+extern int portServeur;
 
 int main(int argc, char *argv[]) {
 
@@ -38,6 +40,8 @@ int main(int argc, char *argv[]) {
   aS.sin_family = AF_INET;
   inet_pton(AF_INET,argv[2],&(aS.sin_addr));
   aS.sin_port = htons(atoi(argv[3]));
+  char * IPServeur = argv[2];
+  int portServeur = atoi(argv[3]);
   socklen_t lgA = sizeof(struct sockaddr_in);
 
   int co = connect(dS, (struct sockaddr *) &aS, lgA);

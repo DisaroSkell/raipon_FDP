@@ -9,6 +9,14 @@ typedef struct argsrec {
   int fin; // Pointer sur booléen, vrai ssi le programme doit se terminer
 }argsrec;
 
+typedef struct argsfichier {
+  int socket; // Socket de l'envoi de message
+  int numc; // Numéro du client 
+  char * nomf; // Nom du fichier 
+  long taillef; // Taille du fichier
+  int action; // 0 pour récupérer un fichier, 1 pour l'envoyer
+}argsfichier;
+
 /**
  * @brief Le thread de reception de messages du client
  * 
@@ -37,6 +45,8 @@ int envoi_message(int socket, char * msg);
  * @brief Affiche le contenu du répertoire Public/ dans le terminal
  */
 void print_repertoire();
+
+void * thread_fichier(void * argpointer);
 
 /**
  * @brief Envoie le contenu du fichier Public/nomfichier au socket
