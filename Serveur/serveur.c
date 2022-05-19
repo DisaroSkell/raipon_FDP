@@ -37,6 +37,8 @@ int main(int argc, char *argv[]) {
   client init;
   init.socket = 0;
   init.pseudo = "";
+  init.IP = "";
+  init.port = 0;
 
   for (int i = 0; i < nb_clients_max*nb_channels_max; i++) {
     clients[i] = init;
@@ -159,8 +161,15 @@ int main(int argc, char *argv[]) {
     if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
     clients[i].socket = dSC;
     clients[i].pseudo = pseudo;
+<<<<<<< HEAD
     printf("clients[%d] = %d\n", i, clients[i].socket);
     sem_post(&sem_tab_clients);
+=======
+    clients[i].IP = inet_ntoa(aC.sin_addr);
+
+    printf("clients[%d] = %d, IP = %s\n", i, clients[i].socket, clients[i].IP);
+    sem_post(&semaphoreCli);
+>>>>>>> 4c7011b (peer 2 peer)
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){

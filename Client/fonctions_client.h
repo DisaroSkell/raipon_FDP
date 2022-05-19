@@ -11,7 +11,8 @@ typedef struct argsrec {
 
 typedef struct argsfichier {
   int socket; // Socket de l'envoi de message
-  int numc; // Numéro du client 
+  char * IP;
+  char * destinataire; // Pseudo du destinataire
   char * nomf; // Nom du fichier 
   long taillef; // Taille du fichier
   int action; // 0 pour récupérer un fichier, 1 pour l'envoyer
@@ -54,7 +55,7 @@ void * thread_fichier(void * argpointer);
  * @param socket Socket du destinataire
  * @param nomfichier Nom du fichier à envoyer (situé dans Public/)
  */
-void envoi_fichier(int socket, char * nomfichier);
+void envoi_fichier(int socket, char * nomfichier, char * destinataire);
 
 /**
  * @brief Récupère un fichier depuis le socket

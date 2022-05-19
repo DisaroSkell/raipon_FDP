@@ -9,6 +9,8 @@
 typedef struct client {
   int socket;
   char * pseudo;
+  char * IP;
+  int port;
 }client;
 
 /**

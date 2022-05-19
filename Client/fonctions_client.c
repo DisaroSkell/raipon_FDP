@@ -68,12 +68,12 @@ void * thread_reception(void * argpointer){
                 pthread_t t;
                 argsfichier argsf;
 
-                ssize_t rcvNum = recv(args->socket, &(argsf.numc), (3*sizeof(int)), 0);
-                if (rcvNum == -1) {
+                ssize_t rcvIP = recv(args->socket, &(argsf.IP), (3*sizeof(int)), 0);
+                if (rcvIP == -1) {
                     perror("Erreur réception numéro client");
                     exit(0);
                 }
-                if (rcvNum == 0) {
+                if (rcvIP == 0) {
                     printf("Non connecté au serveur, fin du thread\n");
                     exit(0);
                 }
@@ -112,9 +112,10 @@ int lecture_message(int dS) {
             print_repertoire();
         }
         else {
+            argsfichier argsf;
+            
             token = strtok(token, "\n");
             pthread_t t;
-            argsfichier argsf;
 
             argsf.socket = dS;
             argsf.nomf = token;
@@ -167,11 +168,12 @@ void print_repertoire() {
 void * thread_fichier(void * argpointer) {
     argsfichier * args = argpointer;
 
-    if (args->action == 1) {
-        envoi_fichier(args->socket, args->nomf);
+    if (args->action == 1) { // Le client envoie le fichier
+        envoi_fichier(args->socket, args->nomf, args->destinataire);
         pthread_exit(0);
     }
 
+    // Le client reçoit le fichier
     int dS = socket(PF_INET, SOCK_STREAM, 0);
     if (dS == -1){
         perror("Erreur dans la création de la socket");
@@ -181,8 +183,8 @@ void * thread_fichier(void * argpointer) {
 
     struct sockaddr_in aS;
     aS.sin_family = AF_INET;
-    inet_pton(AF_INET,"192.168.1.32",&(aS.sin_addr));
-    aS.sin_port = htons(8888);
+    inet_pton(AF_INET,args->IP,&(aS.sin_addr));
+    aS.sin_port = htons(8000);
     socklen_t lgA = sizeof(struct sockaddr_in);
 
     int co = connect(dS, (struct sockaddr *) &aS, lgA);
@@ -196,10 +198,9 @@ void * thread_fichier(void * argpointer) {
     recup_fichier(dS, args->nomf, args->taillef);
 
     pthread_exit(0);
-
 }
 
-void envoi_fichier(int socketMessage, char * nomfichier) {
+void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     FILE *fp;
 
     // On met le chemin relatif du fichier dans un string
@@ -209,7 +210,7 @@ void envoi_fichier(int socketMessage, char * nomfichier) {
 
     fp = fopen(nomchemin, "r");
     if (fp == NULL) {
-        perror("Erreur durant la lecture du fichier");
+        perror("Erreur durant la lecture du fichier, non trouvé");
         return;
     }
 
@@ -225,11 +226,11 @@ void envoi_fichier(int socketMessage, char * nomfichier) {
         perror("Problème dans la lecture du fichier");
     }
 
-    // La commande sera "/ef [nom fichier] [taille fichier]\0"
-    // D'où les additions:
     char * commande = (char *) malloc((3 + strlen(nomfichier) + 1 + tailleint(taillefichier) + 1) * sizeof(char));
 
     strcpy(commande, "/ef ");
+    strcat(commande, destinataire);
+    strcat(commande, " ");
     strcat(commande, nomfichier);
     strcat(commande, " ");
 
@@ -237,43 +238,49 @@ void envoi_fichier(int socketMessage, char * nomfichier) {
     sprintf(taillef, "%ld", taillefichier);
     strcat(commande, taillef);
     
-    envoi_message(socketMessage, commande);
+    envoi_message(dS, commande);
 
-    int dS = socket(PF_INET, SOCK_STREAM, 0);
-    if (dS == -1){
-        perror("Erreur dans la création de la socket");
-        exit(0);
-    }
-    printf("Socket Créé\n");
+    // On crée une nouvelle socket de type serveur
 
-    struct sockaddr_in aS;
-    aS.sin_family = AF_INET;
-    inet_pton(AF_INET,"192.168.1.32",&(aS.sin_addr));
-    aS.sin_port = htons(8888);
-    socklen_t lgA = sizeof(struct sockaddr_in);
+    int sock = socket(PF_INET, SOCK_STREAM, 0);
+        if (sock == -1){
+            perror("Erreur dans la création de la socket");
+            exit(0);
+        }
+        printf("Socket Créé\n");
 
-    int co = connect(dS, (struct sockaddr *) &aS, lgA);
-    if (co == -1){
-        perror("Erreur envoi demmande de connexion");
-        exit(0);
-    }
-
-    printf("Socket Connecté\n");
-
-    char * mess = (char *) malloc(50*sizeof(char));
-    int rep = recv(socketMessage, mess, 50*sizeof(char), 0); //Feedback du serveur "ok" ou mess d'erreur
-    if (rep == -1){
-            perror("Erreur dans la réception du feedback");
+        struct sockaddr_in ad;
+        ad.sin_family = AF_INET;
+        ad.sin_addr.s_addr = INADDR_ANY;
+        ad.sin_port = htons(8000);
+        int bd = bind(sock, (struct sockaddr*)&ad, sizeof(ad));
+        if (bd == -1){
+            perror("Erreur nommage de la socket");
+            exit(0);
         }
 
-    if (strcmp(mess,"ok") != 0) { 
-        perror(mess);
-        return;
-    }
+        printf("Socket Nommé\n");
 
-    // Après avoir envoyé la commande, on envoie le fichier
+        int lstn = listen(sock, 7);
+        if (lstn == -1){
+            perror("Erreur passage en écoute");
+            exit(0);
+        }
+
+        printf("Mode écoute\n");
+
+        struct sockaddr_in aC;
+        socklen_t lg = sizeof(struct sockaddr_in);
+
+        int dSC = accept(sock, (struct sockaddr*) &aC,&lg);
+        if (dSC == -1){
+            perror("Erreur connexion non acceptée");
+            exit(0);
+            }
+
+    // On envoie le fichier
     while(fgets(data, SIZE, fp) != NULL) {
-        ssize_t envoi = send(dS, data, SIZE, 0);
+        ssize_t envoi = send(dSC, data, SIZE, 0);
         if (envoi == -1) {
             perror("Erreur dans l'envoi du fichier");
             return;
@@ -282,7 +289,7 @@ void envoi_fichier(int socketMessage, char * nomfichier) {
         bzero(data, SIZE);
     }
 
-    printf("Fichier envoyé !\n");
+    printf("Fichier envoyé !");
 }
 
 void recup_fichier(int dS, char * nomf, long taillef) {

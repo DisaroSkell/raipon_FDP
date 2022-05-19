@@ -103,13 +103,11 @@ void* traitement_serveur(void * paramspointer){
             envoi_direct(numclient, lire_manuel(), "Serveur", -10);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) { // On récupère un fichier de la part du client
-            recup_fichier(clients[numclient].socket, cmd.nomf, cmd.taillef);
-        }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "rf") == 0) { // On envoie un fichier au client
-            if (cmd.taillef == -1) { // C'est comme ça qu'on détecte si aucun fichier n'est mis quand on est un shalg :)
-                envoi_repertoire(numclient);
+            int destinataire = chercher_client(cmd.user, nb_clients_max*nb_channels_max, clients);
+            if (destinataire == -1) { // On envoie un feedback d'erreur au client
+                envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", -10);
             } else {
-                envoi_fichier(numclient, cmd.nomf);
+                envoi_direct(numclient, clients[destinataire].IP, "Serveur", -10);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
@@ -824,7 +822,7 @@ void envoi_fichier(int numclient, char * nomfichier) {
     fp = fopen(nomchemin, "r");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier");
-        envoi_direct(numclient, "Fichier non trouvé\n", "Serveur");
+        envoi_direct(numclient, "Fichier non trouvé\n", "Serveur", -10);
         return;
     }
 
@@ -945,6 +943,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
         else if (strcmp(cmd,"ef") == 0 || strcmp(cmd,"envoifichier") == 0) {
             result.nom_cmd = (char *) malloc(3*sizeof(char));
             strcpy(result.nom_cmd, "ef");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le pseudo du destinataire
+            result.user = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(result.user, token);
 
             token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
 
