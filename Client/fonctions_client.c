@@ -41,7 +41,6 @@ void * thread_reception(void * argpointer){
         }
         else {
             if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) {
-
                 char * msgmodif = (char *) malloc((strlen(msg)-4)*sizeof(char));
                 strcpy(msgmodif, strtok(msg, "/")); // On enlève le début du message
                 
@@ -65,22 +64,23 @@ void * thread_reception(void * argpointer){
 
                 int taillef = atoi(token);
 
+                token = strtok(NULL, " "); // On regarde la suite, ici : l'IP du destinataire
+
+                if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                    perror("Il manque l'IP du destinataire !");
+                    continue;
+                }
+
+                char * destinataire = (char *) malloc(strlen(token)*sizeof(char));
+                strcpy(destinataire, token);
+
                 pthread_t t;
                 argsfichier argsf;
-
-                ssize_t rcvIP = recv(args->socket, &(argsf.IP), (3*sizeof(int)), 0);
-                if (rcvIP == -1) {
-                    perror("Erreur réception numéro client");
-                    exit(0);
-                }
-                if (rcvIP == 0) {
-                    printf("Non connecté au serveur, fin du thread\n");
-                    exit(0);
-                }
 
                 argsf.socket = args->socket;
                 argsf.nomf = nomf;
                 argsf.taillef = taillef;
+                argsf.IP = destinataire;
                 argsf.action = 0;
                 int thread = pthread_create(&t,NULL,thread_fichier,&argsf);
             } else {
@@ -112,13 +112,22 @@ int lecture_message(int dS) {
             print_repertoire();
         }
         else {
-            argsfichier argsf;
-            
-            token = strtok(token, "\n");
+            argsfichier argsf;            
             pthread_t t;
 
             argsf.socket = dS;
             argsf.nomf = token;
+
+            token = strtok(NULL, " "); // On regarde le nom du destinataire
+            if (token == NULL) {
+                // Il n'y a pas de destinataire spécifié
+                printf("Il faut spécifier le pseudo d'un destinataire");
+                return strcmp(m, "/fin\n") != 0;
+            }
+
+            token = strtok(token, "\n");
+
+            argsf.destinataire = token;
             argsf.action = 1;
             int thread = pthread_create(&t,NULL,thread_fichier,&argsf);
         }
@@ -229,14 +238,15 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     char * commande = (char *) malloc((3 + strlen(nomfichier) + 1 + tailleint(taillefichier) + 1) * sizeof(char));
 
     strcpy(commande, "/ef ");
-    strcat(commande, destinataire);
-    strcat(commande, " ");
     strcat(commande, nomfichier);
     strcat(commande, " ");
+    
 
     char * taillef = (char *) malloc((tailleint(taillefichier) + 1) * sizeof(char));
     sprintf(taillef, "%ld", taillefichier);
     strcat(commande, taillef);
+    strcat(commande, " ");
+    strcat(commande, destinataire);
     
     envoi_message(dS, commande);
 

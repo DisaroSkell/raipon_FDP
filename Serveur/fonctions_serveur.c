@@ -109,6 +109,19 @@ void* traitement_serveur(void * paramspointer){
             } else {
                 envoi_direct(numclient, clients[destinataire].IP, "Serveur", -10);
             }
+
+            char * taillefichier = (char *) malloc(4 * sizeof(char));
+            sprintf(taillefichier, "%d", cmd.taillef);
+            char * commande = (char *) malloc((3 + strlen(cmd.nomf) + 1 + strlen(taillefichier) + 1) * sizeof(char));
+            
+            strcpy(commande, "/ef ");
+            strcat(commande, cmd.nomf);
+            strcat(commande, " ");
+            strcat(commande, taillefichier);
+            strcat(commande, " ");
+            strcat(commande, clients[numclient].IP);
+            
+            envoi_direct(destinataire, commande, "Serveur", -10);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             if (cmd.taillef == -1) { // On envoie la liste des channels
@@ -944,10 +957,6 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             result.nom_cmd = (char *) malloc(3*sizeof(char));
             strcpy(result.nom_cmd, "ef");
 
-            token = strtok(NULL, " "); // On regarde la suite, ici: le pseudo du destinataire
-            result.user = (char *) malloc(strlen(token)*sizeof(char));
-            strcpy(result.user, token);
-
             token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
 
             if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
@@ -968,6 +977,16 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             }
 
             result.taillef = atoi(token);
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le pseudo du destinataire
+
+            if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
+                perror("Vous devez mettre le pseudo du destinataire après la taille !");
+                result.id_op = -1;
+                return result;
+            }
+
+            result.user = token;
         }
         else if (strcmp(cmd,"rf") == 0 || strcmp(cmd,"rf\n") == 0 || strcmp(cmd,"receptionfichier") == 0 || strcmp(cmd,"receptionfichier\n") == 0) {
             result.nom_cmd = (char *) malloc(3*sizeof(char));
