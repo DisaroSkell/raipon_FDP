@@ -38,7 +38,6 @@ int main(int argc, char *argv[]) {
   init.socket = 0;
   init.pseudo = "";
   init.IP = "";
-  init.port = 0;
 
   for (int i = 0; i < nb_clients_max*nb_channels_max; i++) {
     clients[i] = init;
@@ -153,6 +152,30 @@ int main(int argc, char *argv[]) {
       sem_post(&sem_tab_clients);
     }
 
+    FILE *fp;
+
+    // On met le chemin relatif du fichier dans un string
+    char * nomchemin = (char *) malloc((strlen("Public/ban")+1)*sizeof(char));
+    strcpy(nomchemin, "Public/ban");
+
+    fp = fopen(nomchemin, "r");
+    if (fp == NULL) {
+        perror("Erreur durant la lecture du fichier ban");
+        exit(0);
+    }
+
+    char * m = (char *) malloc(20*sizeof(char));
+    while(fgets(m, 20, fp) != NULL) {
+      if (strcmp(inet_ntoa(aC.sin_addr), m) == 0) {
+        envoi_message(dSC, "Vous êtes malheuresement banni");
+        client init;
+        init.socket = 0;
+        init.pseudo = "";
+        init.IP = "";
+        clients[i] = init;
+      }
+    }
+
     envoi_message(dSC, "Bienvenue sur le serveur !\n");
 
     pthread_t new;
@@ -161,15 +184,10 @@ int main(int argc, char *argv[]) {
     if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
     clients[i].socket = dSC;
     clients[i].pseudo = pseudo;
-<<<<<<< HEAD
-    printf("clients[%d] = %d\n", i, clients[i].socket);
-    sem_post(&sem_tab_clients);
-=======
     clients[i].IP = inet_ntoa(aC.sin_addr);
 
     printf("clients[%d] = %d, IP = %s\n", i, clients[i].socket, clients[i].IP);
-    sem_post(&semaphoreCli);
->>>>>>> 4c7011b (peer 2 peer)
+    sem_post(&sem_tab_clients);
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){

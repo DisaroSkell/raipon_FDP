@@ -87,7 +87,7 @@ void* traitement_serveur(void * paramspointer){
                 while (strchr(cmd.message, '\n') == NULL) {
                     strcat(cmd.message, reception_message(numclient, numchan, posclient));
                 }
-
+                cmd.message = censure(cmd.message);
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo, -2);
             }
         }
@@ -238,6 +238,7 @@ void* traitement_serveur(void * paramspointer){
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", -10);
         }
         else { // On envoie un message à tous les clients du channel
+            msg = censure(msg);
             if (strcmp(chan, "Général") == 0) {
                 for(int i = 0; i < nb_clients_max*nb_channels_max; i++){
                     // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
@@ -542,6 +543,7 @@ void deconnexion(int numclient, int numchan, int posclient) {
     client init;
     init.socket = 0;
     init.pseudo = "";
+    init.IP = "";
 
     // On le retire du channel dans lequel il était
     if (numchan != -1) {
@@ -1159,6 +1161,74 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
         }
     }
     return result;
+}
+
+char * censure(char * message) {
+    FILE * censure;
+    FILE * characters;
+    char * nomcheminCen = (char *) malloc((strlen("Public/Censure")+1)*sizeof(char));
+    strcpy(nomcheminCen, "Public/Censure");
+    char * nomcheminChar = (char *) malloc((strlen("Public/Characters")+1)*sizeof(char));
+    strcpy(nomcheminChar, "Public/Characters");
+    censure = fopen(nomcheminCen, "r");
+    characters = fopen(nomcheminChar, "r");
+    if (censure == NULL) {
+        perror("Erreur durant la lecture du fichier de mots censurés, non trouvé");
+        return message;
+    }
+    if (characters == NULL) {
+        perror("Erreur durant la lecture du fichier de caractères spéciaux");
+        return message;
+    }
+    char * m = (char *) malloc(20*sizeof(char));
+    while(fgets(m, 20, censure) != NULL) {
+        char * token = (char *) malloc((strlen(m))*sizeof(char));
+        char * replace = (char *) malloc((strlen(m))*sizeof(char));
+        for(int i = 1; i < strlen(m); i++) {
+            strcat(replace, "*");
+        }
+        token = strtok(m, "\n");
+        str_replace(message, m, replace);
+        mettreEnMajuscule(m);
+        str_replace(message, m, replace);
+    }
+    return message;
+}
+
+void mettreEnMajuscule(char* string){
+    string[0]= string[0] - 32;
+}
+
+void str_replace(char *target, const char *needle, const char *replacement) {
+    char buffer[1024] = { 0 };
+    char *insert_point = &buffer[0];
+    const char *tmp = target;
+    size_t needle_len = strlen(needle);
+    size_t repl_len = strlen(replacement);
+
+    while (1) {
+        const char *p = strstr(tmp, needle);
+
+        // walked past last occurrence of needle; copy remaining part
+        if (p == NULL) {
+            strcpy(insert_point, tmp);
+            break;
+        }
+
+        // copy part before needle
+        memcpy(insert_point, tmp, p - tmp);
+        insert_point += p - tmp;
+
+        // copy replacement string
+        memcpy(insert_point, replacement, repl_len);
+        insert_point += repl_len;
+
+        // adjust pointers, move on
+        tmp = p + needle_len;
+    }
+
+    // write altered string back to target
+    strcpy(target, buffer);
 }
 
 void signal_handle(int sig){

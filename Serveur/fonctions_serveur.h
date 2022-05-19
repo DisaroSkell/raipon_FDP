@@ -10,7 +10,6 @@ typedef struct client {
   int socket;
   char * pseudo;
   char * IP;
-  int port;
 }client;
 
 /**
@@ -229,6 +228,12 @@ void envoi_fichier(int numclient, char * nomfichier);
  * @return Un objet commande, cf la struct pour plus d'info de retour
  */
 commande gestion_commande(char * msg, int numclient, int numchan, int posclient);
+
+char * censure(char * message);
+
+void mettreEnMajuscule(char* string);
+
+void str_replace(char *target, const char *needle, const char *replacement); // src: https://stackoverflow.com/questions/32413667/replace-all-occurrences-of-a-substring-in-a-string-in-c
 
 /**
  * @brief Gestion du signal CTRL C serveur
