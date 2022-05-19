@@ -112,16 +112,16 @@ void* traitement_serveur(void * paramspointer){
 
             char * taillefichier = (char *) malloc(4 * sizeof(char));
             sprintf(taillefichier, "%d", cmd.taillef);
-            char * commande = (char *) malloc((3 + strlen(cmd.nomf) + 1 + strlen(taillefichier) + 1) * sizeof(char));
+            char * co = (char *) malloc((3 + strlen(cmd.nomf) + 1 + strlen(taillefichier) + 1) * sizeof(char));
             
-            strcpy(commande, "/ef ");
-            strcat(commande, cmd.nomf);
-            strcat(commande, " ");
-            strcat(commande, taillefichier);
-            strcat(commande, " ");
-            strcat(commande, clients[numclient].IP);
+            strcpy(co, "/ef ");
+            strcat(co, cmd.nomf);
+            strcat(co, " ");
+            strcat(co, taillefichier);
+            strcat(co, " ");
+            strcat(co, clients[numclient].IP);
             
-            envoi_direct(destinataire, commande, "Serveur", -10);
+            envoi_message(clients[destinataire].socket, co);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             if (cmd.taillef == -1) { // On envoie la liste des channels
@@ -731,7 +731,7 @@ void restaurer_channels() {
 char * lire_manuel() {
     char * buffer = 0;
     long length;
-    FILE * f = fopen ("Public/manuel", "rb");
+    FILE * f = fopen("Public/manuel", "rb");
 
     if (f) {
         fseek (f, 0, SEEK_END);
@@ -782,12 +782,13 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
     char * mess = (char *) malloc(50*sizeof(char));
     int fb;
     
-    if (fopen(cheminf, "r") != NULL){
+    if (fp = fopen(cheminf, "r") != NULL){
         strcpy(mess, "Nom de fichier déjà utilisé");
         fb = send(socket, mess, 50*sizeof(char), 0);
         if (fb == -1){
             perror("Erreur dans l'envoi du feedback");
         }
+        fclose(fp);
         return;
     }
     strcpy(mess, "ok");
@@ -877,7 +878,7 @@ void envoi_fichier(int numclient, char * nomfichier) {
 
         bzero(data, SIZE);
     }
-
+    fclose(fp);
     printf("Fichier envoyé à %s !\n", clients[numclient].pseudo);
 }
 
@@ -1168,10 +1169,7 @@ char * censure(char * message) {
     FILE * characters;
     char * nomcheminCen = (char *) malloc((strlen("Public/Censure")+1)*sizeof(char));
     strcpy(nomcheminCen, "Public/Censure");
-    char * nomcheminChar = (char *) malloc((strlen("Public/Characters")+1)*sizeof(char));
-    strcpy(nomcheminChar, "Public/Characters");
     censure = fopen(nomcheminCen, "r");
-    characters = fopen(nomcheminChar, "r");
     if (censure == NULL) {
         perror("Erreur durant la lecture du fichier de mots censurés, non trouvé");
         return message;
@@ -1192,6 +1190,7 @@ char * censure(char * message) {
         mettreEnMajuscule(m);
         str_replace(message, m, replace);
     }
+    fclose(censure);
     return message;
 }
 

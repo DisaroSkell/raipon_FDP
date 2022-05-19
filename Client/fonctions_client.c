@@ -11,8 +11,6 @@
 #include <dirent.h>
 
 int socketServeur;
-char * IPServeur;
-int portServeur;
 
 void * thread_reception(void * argpointer){
 
@@ -40,7 +38,7 @@ void * thread_reception(void * argpointer){
             exit(0);
         }
         else {
-            if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) {
+            if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) { // CHANGER !!!
                 char * msgmodif = (char *) malloc((strlen(msg)-4)*sizeof(char));
                 strcpy(msgmodif, strtok(msg, "/")); // On enlève le début du message
                 
@@ -55,7 +53,7 @@ void * thread_reception(void * argpointer){
                 char * nomf = (char *) malloc(strlen(token)*sizeof(char));
                 strcpy(nomf, token);
 
-                token = strtok(NULL, " "); // On regarde la suite, ici : la taille du fichier
+                token = strtok(token, " "); // On regarde la suite, ici : la taille du fichier
 
                 if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                     perror("Il manque la taille du fichier après son nom !");
@@ -64,7 +62,7 @@ void * thread_reception(void * argpointer){
 
                 int taillef = atoi(token);
 
-                token = strtok(NULL, " "); // On regarde la suite, ici : l'IP du destinataire
+                token = strtok(token, " "); // On regarde la suite, ici : l'IP du destinataire
 
                 if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                     perror("Il manque l'IP du destinataire !");
@@ -76,7 +74,9 @@ void * thread_reception(void * argpointer){
 
                 pthread_t t;
                 argsfichier argsf;
-
+                if (1 != 2) {
+                    perror(msg);
+                }
                 argsf.socket = args->socket;
                 argsf.nomf = nomf;
                 argsf.taillef = taillef;
@@ -300,6 +300,7 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     }
 
     printf("Fichier envoyé !");
+    fclose(fp);
 }
 
 void recup_fichier(int dS, char * nomf, long taillef) {
@@ -309,7 +310,7 @@ void recup_fichier(int dS, char * nomf, long taillef) {
 
     // On met le chemin relatif du fichier dans un string
     char * cheminf = (char *) malloc((strlen(nomf)+7)*sizeof(char));
-    strcpy(cheminf, "Public/");
+    strcpy(cheminf, "");
     strcat(cheminf, nomf);
     
     fp = fopen(cheminf, "w");

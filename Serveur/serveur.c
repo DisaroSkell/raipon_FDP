@@ -176,6 +176,8 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    fclose(fp);
+
     envoi_message(dSC, "Bienvenue sur le serveur !\n");
 
     pthread_t new;
