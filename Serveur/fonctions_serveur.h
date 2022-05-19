@@ -98,6 +98,13 @@ char * reception_message(int numclient, int numchan, int posclient);
 int chercher_client(char * pseudo, int taille, client tabcli[taille]);
 
 /**
+* @brief Envoie la liste des clients connectés au serveur et dans les salons
+*
+* @return un message disant que personne n'est connecté s'il n'y a personne de connecté , la liste des personnes connectées sinon
+*/
+char * lister_client_co();
+
+/**
  * @brief Cherche une place dans le tableau clients
  * 
  * @param taille Taille du tableau qui suit
