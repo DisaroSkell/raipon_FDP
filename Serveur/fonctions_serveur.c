@@ -66,18 +66,14 @@ void* traitement_serveur(void * paramspointer){
     // Permet de savoir où se situe le client
     int numchan = -1; // Le général n'est pas dans le tableau channels
     char * chan = "Général";
+    int posclient = -1; // Position du client dans le tableau occupants du channel
 
     // On lui souhaite la bienvenue quand même
     envoi_direct(numclient, "Bienvenue dans le Général !", "Serveur", "Serveur");
 
-    // client vide, utilisé pour remplacé ce client dans clients en cas de fermeture du thread
-    client init;
-    init.socket = 0;
-    init.pseudo = "";
-
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
-        char * msg = reception_message(numclient);
+        char * msg = reception_message(numclient, numchan, posclient);
 
         printf("%d: Message reçu : %s\n", numclient, msg);
 
@@ -89,7 +85,7 @@ void* traitement_serveur(void * paramspointer){
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", "Serveur");
             } else {
                 while (strchr(cmd.message, '\n') == NULL) {
-                    strcat(cmd.message, reception_message(numclient));
+                    strcat(cmd.message, reception_message(numclient, numchan, posclient));
                 }
 
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo, "Direct");
@@ -99,12 +95,7 @@ void* traitement_serveur(void * paramspointer){
             // On arrête tout
             envoi_direct(numclient, "Déconnexion en cours...\n", "Serveur", "Serveur");
             
-            printf("%d: Fin du thread\n", numclient);
-            
-            if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
-            clients[numclient] = init;
-            sem_post(&sem_tab_clients);
-            sem_post(&sem_clients_max);
+            deconnexion(numclient, numchan, posclient);
             
             pthread_exit(0);
         }
@@ -123,31 +114,36 @@ void* traitement_serveur(void * paramspointer){
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             if (cmd.taillef == -1) { // On envoie la liste des channels
-                for (int i = 0; i < nb_channels_max; i++) {
-                    // On va faire une fonction d'envoi spécial
-                    if (strcmp(channels[i].nom, "") != 0) {
-                        envoi_direct(numclient, channels[i].nom, "Serveur", "Serveur");
-                    }
-                }
+                envoi_channels(numclient);
             } else {
                 int suivant = chercher_channel(cmd.nomf); // On rappelle, le général n'est pas dans le tableau channels
                 if (suivant == -1 && strcmp(cmd.nomf, "Général") != 0) { // On n'a pas trouvé le channel
                     envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.", "Serveur", "Serveur");
                 } else {
-                    if (changer_channel(numclient, numchan, suivant) == -1) {
+                    int place = changer_channel(numclient, numchan, suivant);
+                    if (place == -2) {
                         // Le channel suivant est plein
 
-                        // On envoie "Le channel [nom] est plein."
-                        char * pleintxt = (char *) malloc((11 + strlen(cmd.nomf) + 11)*sizeof(char));
+                        // On envoie "Le channel [nom] est plein.\n"
+                        char * pleintxt = (char *) malloc((11 + strlen(cmd.nomf) + 12)*sizeof(char));
 
                         strcpy(pleintxt,"Le channel ");
                         strcat(pleintxt, cmd.nomf);
-                        strcat(pleintxt, " est plein.");
+                        strcat(pleintxt, " est plein.\n");
 
                         envoi_direct(numclient, pleintxt, "Serveur", "Serveur");
                     } else {
-                        // Prévenir qu'on quitte le channel
+                        if (numchan != -1) {
+                            // On quitte le channel seulement si c'est pas le Général
+                            aurevoir(numclient, numchan);
+                        }
+
+                        // On va à la destination
                         numchan = suivant;
+                        if (place != -4) {
+                            posclient = place;
+                        }
+
                         chan = (char *) malloc(strlen(cmd.nomf)*sizeof(char));
                         strcpy(chan, cmd.nomf);
                         if (numchan != -1) {
@@ -170,11 +166,11 @@ void* traitement_serveur(void * paramspointer){
                 }
             } else {
                 if (chercher_channel(chan) == -1) { // On ramène l'utilisateur dans le général car le channel n'existe plus
-                    // On va envoyer "Le channel [nomchannel] n'existe plus, retour dans le général."
-                    char * erreur = (char *) malloc((11 + strlen(chan) + 39)*sizeof(char));
+                    // On va envoyer "Le channel [nomchannel] n'existe plus, retour dans le général.\n"
+                    char * erreur = (char *) malloc((11 + strlen(chan) + 40)*sizeof(char));
                     strcpy(erreur, "Le channel ");
                     strcat(erreur, chan);
-                    strcat(erreur, " n'existe plus, retour dans le général.");
+                    strcat(erreur, " n'existe plus, retour dans le général.\n");
 
                     envoi_direct(numclient, erreur, "Serveur", "Serveur");
 
@@ -226,12 +222,7 @@ int envoi_direct(int numreceveur, char * msg, char * expediteur, char * chan) {
     return resultat;
 }
 
-char * reception_message(int numclient) {
-    // client vide, utilisé pour remplacé ce client dans clients en cas de fermeture du thread
-    client init;
-    init.socket = 0;
-    init.pseudo = "";
-
+char * reception_message(int numclient, int numchan, int posclient) {
     int len;
 
     // On reçoit la taille du message
@@ -239,14 +230,7 @@ char * reception_message(int numclient) {
     if (rcv_len == -1) perror("Erreur réception taille message");
     if (rcv_len == 0) {
         // On arrête tout
-        printf("Non connecté au client, fin du thread\n");
-        
-        if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
-        clients[numclient] = init;
-        sem_post(&sem_tab_clients);
-        sem_post(&sem_clients_max);
-        
-        pthread_exit(0);
+        deconnexion(numclient, numchan, posclient);
     }
     printf("%d: Longueur du message reçu: %d\n", numclient, (int)len);
 
@@ -256,14 +240,7 @@ char * reception_message(int numclient) {
     if (rcv == -1) perror("Erreur réception message");
     if (rcv == 0) {
         // On arrête tout
-        printf("Non connecté au client, fin du thread\n");
-        
-        if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
-        clients[numclient] = init;
-        sem_post(&sem_tab_clients);
-        sem_post(&sem_clients_max);
-        
-        pthread_exit(0);
+        deconnexion(numclient, numchan, posclient);
     }
 
     return msg;
@@ -317,30 +294,32 @@ int chercher_channel(char * nom) {
 }
 
 int changer_channel(int numclient, int numchan1, int numchan2) {
-    // Client vide, on va en avoir besoin
+    // Client vide, utilisé pour remplacer le client sortant
     client init;
     init.socket = 0;
     init.pseudo = "";
 
-    int result = 0;
+    // cf les spécifs pour plus d'info
+    int result = -1;
 
     if (numchan1 == numchan2) {
         printf("Nous avons affaire à un petit clown :)\n");
-        return -2;
+        return -4;
     }
 
     if (numchan2 !=-1) {
         int placelibre = chercher_place(nb_clients_max, channels[numchan2].occupants);
-        if (placelibre == nb_channels_max) { // Le channel est plein !!
-            result = -1;
+        if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
+            result = -2;
         } else {
             sem_wait(&sem_tab_channels);
             channels[numchan2].occupants[placelibre] = clients[numclient];
             sem_post(&sem_tab_channels);
+            result = placelibre;
         }
     } // On ne fait rien si on est dans le général
 
-    if (numchan1 != -1 && result != -1) {
+    if (numchan1 != -1 && result != -2) {
         sem_wait(&sem_tab_channels);
         int placelibre = chercher_client(clients[numclient].pseudo, nb_clients_max, channels[numchan1].occupants);
         channels[numchan1].occupants[placelibre] = init;
@@ -358,20 +337,59 @@ int bienvenue(int numclient, int numchan) {
     char * nomchan = channels[numchan].nom;
     char * descchan = channels[numchan].description;
 
-    // On va envoyer "[[nomchannel]] Bienvenue à [pseudo] dans le channel!" à tous les membres du channel
-    char * message1 = (char *) malloc((1 + strlen(nomchan) + 14 + strlen(pseudo) + 17)*sizeof(char));
+    // On va envoyer "[[nomchannel]] Bienvenue à [pseudo] dans le channel!\n" à tous les membres du channel
+    char * message1 = (char *) malloc((1 + strlen(nomchan) + 14 + strlen(pseudo) + 18)*sizeof(char));
     strcpy(message1, "[");
     strcat(message1, nomchan);
     strcat(message1, "] Bienvenue à ");
     strcat(message1, pseudo);
-    strcat(message1, " dans le channel!");
+    strcat(message1, " dans le channel!\n");
 
-    // On va envoyer "Vous arrivez dans le channel [nom du channel]:\n[description]" au client
-    char * message2 = (char *) malloc((29 + strlen(nomchan) + 2 + strlen(descchan))*sizeof(char));
+    // On va envoyer "Vous arrivez dans le channel [nom du channel]:\n[description]\n" au client
+    char * message2 = (char *) malloc((29 + strlen(nomchan) + 2 + strlen(descchan) + 1)*sizeof(char));
     strcpy(message2, "Vous arrivez dans le channel ");
     strcat(message2, nomchan);
     strcat(message2, ":\n");
     strcat(message2, descchan);
+    strcat(message2, "\n");
+
+    for (int i = 0; i < nb_clients_max; i++) {
+        if (channels[numchan].occupants[i].socket != 0) {
+            if (strcmp(channels[numchan].occupants[i].pseudo, clients[numclient].pseudo) == 0) {
+                if (envoi_message(channels[numchan].occupants[i].socket, message2) == -1) {
+                    result = -1;
+                }
+            } else {
+                if (envoi_message(channels[numchan].occupants[i].socket, message1) == -1) {
+                    result = -1;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+int aurevoir(int numclient, int numchan) {
+    int result = 0;
+
+    // On les stock pour éviter d'y accéder plusieurs fois
+    char * pseudo = clients[numclient].pseudo;
+    char * nomchan = channels[numchan].nom;
+
+    // On va envoyer "[[nomchannel]] [pseudo] a quitté le channel." à tous les membres du channel
+    char * message1 = (char *) malloc((1 + strlen(nomchan) + 2 + strlen(pseudo) + 22)*sizeof(char));
+    strcpy(message1, "[");
+    strcat(message1, nomchan);
+    strcat(message1, "] ");
+    strcat(message1, pseudo);
+    strcat(message1, " a quitté le channel.\n");
+
+    // On va envoyer "Vous quittez le channel [nomchannel]." au client
+    char * message2 = (char *) malloc((24 + strlen(nomchan) + 2)*sizeof(char));
+    strcpy(message2, "Vous quittez le channel ");
+    strcat(message2, nomchan);
+    strcat(message2, ".\n");
 
     for (int i = 0; i < nb_clients_max; i++) {
         if (clients[i].socket != 0) {
@@ -388,6 +406,70 @@ int bienvenue(int numclient, int numchan) {
     }
 
     return result;
+}
+
+void deconnexion(int numclient, int numchan, int posclient) {
+    char * pseudo = clients[numclient].pseudo; // On le stock, on va en avoir besoin plusieurs fois
+
+    printf("Fin du thread du client %d concernant %s\n", numclient, pseudo);
+
+    // Client vide, utilisé pour retirer le client qui se déconnecte de la liste
+    client init;
+    init.socket = 0;
+    init.pseudo = "";
+
+    // On le retire du channel dans lequel il était
+    if (numchan != -1) {
+        if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+        channels[numchan].occupants[posclient] = init;
+        sem_post(&sem_tab_clients);
+    } // On ne fait rien s'il était dans le général
+    
+    // On le retire des clients
+    if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
+    clients[numclient] = init;
+    sem_post(&sem_tab_clients);
+    sem_post(&sem_clients_max);
+
+    // On prévient tout le monde qu'il est parti
+    // Dans le channel [Général] par <Serveur>: "[pseudo] s'est déconnecté.\n"
+    char * message = (char *) malloc((strlen(pseudo) + 19) * sizeof(char));
+    strcpy(message, pseudo);
+    strcat(message, " s'est déconnecté.\n");
+
+    for(int i = 0; i < nb_clients_max*nb_channels_max; i++){
+        // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
+        if (i != numclient && clients[i].socket != 0) { // Les clients ont tous des sockets différents (ou vide)
+            envoi_direct(i, message, "Serveur", "Général");
+        }
+    }
+    
+    pthread_exit(0);
+}
+
+void envoi_channels(int numclient) {
+    envoi_message(clients[numclient].socket, "[Serveur] Voici la liste des channels:\n");
+
+    char * infochan;
+
+    for (int i = 0; i < nb_channels_max; i++) {
+        char * nomchan = channels[i].nom;
+        if (strcmp(nomchan, "") != 0) {
+            char * descchan = channels[i].description;
+
+            // On envoie "\t- [[nomchan]]: [descchan]\n"
+            infochan = (char *) malloc((4 + strlen(nomchan) + 3 + strlen(descchan) + 1)*sizeof(char));
+            strcpy(infochan, "\t- [");
+            strcat(infochan, nomchan);
+            strcat(infochan, "]: ");
+            strcat(infochan, descchan);
+            strcat(infochan, "\n");
+
+            envoi_message(clients[numclient].socket, infochan);
+
+            free(infochan);
+        }
+    }
 }
 
 char * lire_manuel() {

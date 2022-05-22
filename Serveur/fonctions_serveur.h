@@ -77,11 +77,14 @@ int envoi_direct(int numreceveur, char * msg, char * envoyeur, char * chan);
 /**
  * @brief Reception d'un message du client numclient dans le tableau clients
  * Reception de la taille, puis du message
+ * Utilise la fonction deconnexion()
  * 
  * @param numclient Indice du client dans le tableau
+ * @param numchan Index du channel dans le tableau channels
+ * @param posclient Index du client dans le tableau des occupant du channel numchan
  * @return Le message reçu
  */
-char * reception_message(int numclient);
+char * reception_message(int numclient, int numchan, int posclient);
 
 /**
  * @brief Cherche un client dans le tableau tabcli par son pseudo. Renvoie une erreur si deux clients ont le même pseudo.
@@ -116,7 +119,7 @@ int chercher_channel(char * nom);
  * @param numclient Index du client dans le tableau clients
  * @param numchan1 Index du channel de départ dans le tableau channels
  * @param numchan2 Index du channel d'arrivée dans le tableau channels
- * @return -1 s'il y a une erreur
+ * @return -1 si on va vers le général, -2 si numchan2 est plein, sinon renvoie la position du client dans le tableau des occupants du channel
  */
 int changer_channel(int numclient, int numchan1, int numchan2);
 
@@ -129,6 +132,31 @@ int changer_channel(int numclient, int numchan1, int numchan2);
  * @return -1 si problème d'envoi
  */
 int bienvenue(int numclient, int numchan);
+
+/**
+ * @brief Envoie un message notifiant le départ du client dans le channel
+ * 
+ * @param numclient Index du client dans le tableau clients
+ * @param numchan Index du channel dans le tableau channels
+ * @return -1 si problème d'envoi
+ */
+int aurevoir(int numclient, int numchan);
+
+/**
+ * @brief Met fin au thread de gestion client pour déconnecter le client proprement
+ * 
+ * @param numclient Index du client dans le tableau clients
+ * @param numchan Index du channel dans le tableau channels
+ * @param posclient Index du client dans le tableau des occupant du channel numchan; -1 si c'est dans le Général
+ */
+void deconnexion(int numclient, int numchan, int posclient);
+
+/**
+ * @brief Envoie tous les channels et leur description au client
+ * 
+ * @param numclient Indice du client dans le tableau
+ */
+void envoi_channels(int numclient);
 
 /**
  * @brief Consulte le fichier Public/manuel (source: https://www.codegrepper.com/code-examples/c/c+read+file+into+string)

@@ -63,8 +63,8 @@ void * thread_reception(void * argpointer){
 
                 recup_fichier(args->socket, nomf, taillef);
             } else {
-                printf("Message reçu :\n");
-                printf("%s\n", msg);
+                printf("\n");
+                printf("%s", msg);
             }
         }
     }
@@ -223,7 +223,7 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier) {
 }
 
 void signal_handleCli(int sig){
-    envoi_message(socketServeur, "Cette personne se déconnecte.\n");
+    envoi_message(socketServeur, "/fin\n");
 
     printf("Fin du programme\n");
     exit(0);
