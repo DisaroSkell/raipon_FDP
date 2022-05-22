@@ -153,6 +153,9 @@ void* traitement_serveur(void * paramspointer){
                 }
             }
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "membres") == 0) {
+            envoi_membres(numclient, numchan);
+        }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", "Serveur");
         }
@@ -447,6 +450,57 @@ void deconnexion(int numclient, int numchan, int posclient) {
     pthread_exit(0);
 }
 
+void envoi_membres(int numclient, int numchan) {
+    char * nomchan;
+    if (numchan == -1) { // On est dans le général
+        nomchan = "Général";
+    } else {
+        nomchan = channels[numchan].nom;
+    }
+
+    // On va commencer par envoyer "[Serveur] Voici la liste des membres du channel [nomchannel]:\n"
+    char * message = (char *) malloc((48 + strlen(nomchan) + 2)*sizeof(char));
+    strcpy(message, "[Serveur] Voici la liste des membres du channel ");
+    strcat(message, nomchan);
+    strcat(message, ":\n");
+
+    envoi_message(clients[numclient].socket, message);
+
+    char * cli;
+
+    if (numchan == -1) { // On est dans le général
+        for (int i = 0; i < nb_clients_max*nb_channels_max; i++) {
+            if (clients[i].socket != 0) {
+                char * pseudo = clients[i].pseudo;
+                // On envoie "\t- [pseudo]\n"
+                cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
+                strcpy(cli, "\t- ");
+                strcat(cli, pseudo);
+                strcat(cli, "\n");
+
+                envoi_message(clients[numclient].socket, cli);
+
+                free(cli);
+            }
+        }
+    } else {
+        for (int i = 0; i < nb_clients_max; i++) {
+            if (channels[numchan].occupants[i].socket != 0) {
+                char * pseudo = channels[numchan].occupants[i].pseudo;
+                // On envoie "\t- [pseudo]\n"
+                cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
+                strcpy(cli, "\t- ");
+                strcat(cli, pseudo);
+                strcat(cli, "\n");
+
+                envoi_message(clients[numclient].socket, cli);
+
+                free(cli);
+            }
+        }
+    }
+}
+
 void envoi_channels(int numclient) {
     envoi_message(clients[numclient].socket, "[Serveur] Voici la liste des channels:\n");
 
@@ -736,6 +790,10 @@ commande gestion_commande(char * slashmsg) {
                     strcpy(result.nomf, token);
                 }
             }
+        }
+        else if (strcmp(cmd,"membres\n") == 0) {
+            result.nom_cmd = (char *) malloc(7*sizeof(char));
+            strcpy(result.nom_cmd, "membres");
         }
         else {
             perror("Commande non reconnue");

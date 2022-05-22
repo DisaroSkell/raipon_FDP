@@ -152,6 +152,14 @@ int aurevoir(int numclient, int numchan);
 void deconnexion(int numclient, int numchan, int posclient);
 
 /**
+ * @brief Envoie la liste des membres du channel au client
+ * 
+ * @param numclient Index du client dans le tableau clients
+ * @param numchan Index du channel dans le tableau channels
+ */
+void envoi_membres(int numclient, int numchan);
+
+/**
  * @brief Envoie tous les channels et leur description au client
  * 
  * @param numclient Indice du client dans le tableau

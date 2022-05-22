@@ -16,3 +16,5 @@
 - /channel
     Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
     
+- /membres
+    Permet de lister les membres du channel que vous occupez.
