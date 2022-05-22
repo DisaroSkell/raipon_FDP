@@ -9,7 +9,6 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#define SIZE 1024
 
 int socketServeur;
 

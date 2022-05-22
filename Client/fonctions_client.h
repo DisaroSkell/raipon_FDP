@@ -1,4 +1,5 @@
-#define taille_pseudo 30 // taille du pseudo en comptant le \0
+#define taille_pseudo 30 // Taille du pseudo en comptant le \0
+#define SIZE 1024 // Taille du buffe
 
 /**
  * @brief Structure qui sera passée au thread de réception client

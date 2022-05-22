@@ -12,3 +12,7 @@
 
 - /receptionfichier [nom fichier] OU /rf [nom fichier]
     Récupère un fichier du serveur. Si rien n'est entré, vous montre les fichiers disponibles.
+
+- /channel
+    Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
+    

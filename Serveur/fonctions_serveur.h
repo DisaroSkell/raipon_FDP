@@ -1,5 +1,7 @@
-#define nb_client_max 3 // Nombre de client maximum pouvant être accueillis sur la messagerie en simultané
-#define taille_pseudo 30 // taille du pseudo en comptant le \0
+#define nb_clients_max 3 // Nombre de client maximum pouvant être accueillis sur un channel en simultané
+#define nb_channels_max 2 // Nombre de channels maximum pouvant être actifs en même temps
+#define taille_pseudo 30 // Taille du pseudo en comptant le \0
+#define SIZE 1024 // Taille du buffer
 
 /**
  * @brief Structure pour un client (socket et pseudo)
@@ -8,6 +10,15 @@ typedef struct client {
   int socket;
   char * pseudo;
 }client;
+
+/**
+ * @brief Structure pour un channel (nom, description et occupants)
+ */
+typedef struct channel {
+  char * nom;
+  char * description;
+  client occupants[nb_clients_max];
+}channel;
 
 /**
  * @brief Structure pour le thread de relai de message pour chaque client
@@ -58,9 +69,10 @@ void * traitement_serveur(void * paramspointer);
  * @param numreceveur Indice du receveur dans le tableau clients
  * @param msg Message à envoyer
  * @param envoyeur Pseudo de l'envoyeur
+ * @param chan Channel où écrit l'envoyeur
  * @return 0 si tout se passe bien, -1 si erreur d'envoi
  */
-int envoi_direct(int numreceveur, char * msg, char * envoyeur);
+int envoi_direct(int numreceveur, char * msg, char * envoyeur, char * chan);
 
 /**
  * @brief Reception d'un message du client numclient dans le tableau clients
@@ -72,19 +84,51 @@ int envoi_direct(int numreceveur, char * msg, char * envoyeur);
 char * reception_message(int numclient);
 
 /**
- * @brief Cherche un client dans le tableau clients par son pseudo
+ * @brief Cherche un client dans le tableau tabcli par son pseudo. Renvoie une erreur si deux clients ont le même pseudo.
  * 
  * @param pseudo Pseudo de la personne recherchée
+ * @param taille Taille du tableau qui suit
+ * @param tabcli Tableau de clients, chaque client est supposé soit "vide" soit unique
  * @return -1 si non trouvé, l'index dans le tableau clients sinon.
  */
-int chercher_client(char * pseudo);
+int chercher_client(char * pseudo, int taille, client tabcli[taille]);
 
 /**
  * @brief Cherche une place dans le tableau clients
  * 
+ * @param taille Taille du tableau qui suit
+ * @param tabcli Tableau de clients, chaque client est supposé soit "vide" soit unique
  * @return Si aucune place n'est trouvée la taille du tableau, sinon l'index de la première place trouvée
  */
-int chercher_place();
+int chercher_place(int taille, client tabcli[taille]);
+
+/**
+ * @brief Cherche un channel dans le tableau channels par nom. Renvoie une erreur si deux channels ont le même nom.
+ * 
+ * @param nom Nom du channel recherché
+ * @return -1 si non trouvé, l'index dans le tableau channels sinon
+ */
+int chercher_channel(char * nom);
+
+/**
+ * @brief Déplace un utilisateur d'un channel à un autre. Modifie le tableau channels.
+ * 
+ * @param numclient Index du client dans le tableau clients
+ * @param numchan1 Index du channel de départ dans le tableau channels
+ * @param numchan2 Index du channel d'arrivée dans le tableau channels
+ * @return -1 s'il y a une erreur
+ */
+int changer_channel(int numclient, int numchan1, int numchan2);
+
+/**
+ * @brief Envoie un message de bienvenue dans le channel pour prévenir l'arrivée du client.
+ * Envoie un message spécial de bienvenue au client avec la description du channel.
+ * 
+ * @param numclient Index du client dans le tableau clients
+ * @param numchan Index du channel dans le tableau channels
+ * @return -1 si problème d'envoi
+ */
+int bienvenue(int numclient, int numchan);
 
 /**
  * @brief Consulte le fichier Public/manuel (source: https://www.codegrepper.com/code-examples/c/c+read+file+into+string)
