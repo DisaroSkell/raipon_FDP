@@ -69,7 +69,7 @@ void* traitement_serveur(void * paramspointer){
     int posclient = -1; // Position du client dans le tableau occupants du channel
 
     // On lui souhaite la bienvenue quand même
-    envoi_direct(numclient, "Bienvenue dans le Général !", "Serveur", "Serveur");
+    envoi_direct(numclient, "Bienvenue dans le Général !\n", "Serveur", "Serveur");
 
     printf("%d: Client socket = %d\n", numclient, clients[numclient].socket);
     while (1) {
@@ -118,7 +118,7 @@ void* traitement_serveur(void * paramspointer){
             } else {
                 int suivant = chercher_channel(cmd.nomf); // On rappelle, le général n'est pas dans le tableau channels
                 if (suivant == -1 && strcmp(cmd.nomf, "Général") != 0) { // On n'a pas trouvé le channel
-                    envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.", "Serveur", "Serveur");
+                    envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", "Serveur");
                 } else {
                     int place = changer_channel(numclient, numchan, suivant);
                     if (place == -2) {
@@ -436,7 +436,7 @@ void deconnexion(int numclient, int numchan, int posclient) {
 
     // On prévient tout le monde qu'il est parti
     // Dans le channel [Général] par <Serveur>: "[pseudo] s'est déconnecté.\n"
-    char * message = (char *) malloc((strlen(pseudo) + 19) * sizeof(char));
+    char * message = (char *) malloc((strlen(pseudo) + strlen(" s'est déconnecté.\n")) * sizeof(char));
     strcpy(message, pseudo);
     strcat(message, " s'est déconnecté.\n");
 
