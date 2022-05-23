@@ -74,9 +74,7 @@ void * thread_reception(void * argpointer){
 
                 pthread_t t;
                 argsfichier argsf;
-                if (1 != 2) {
-                    perror(msg);
-                }
+
                 argsf.socket = args->socket;
                 argsf.nomf = nomf;
                 argsf.taillef = taillef;
@@ -291,7 +289,7 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
         bzero(data, SIZE);
     }
 
-    printf("Fichier envoyé !");
+    printf("Fichier envoyé !\n");
     fclose(fp);
 }
 
@@ -302,7 +300,7 @@ void recup_fichier(int dS, char * nomf, long taillef) {
 
     // On met le chemin relatif du fichier dans un string
     char * cheminf = (char *) malloc((strlen(nomf)+7)*sizeof(char));
-    strcpy(cheminf, "");
+    strcpy(cheminf, "Public/rcv/");
     strcat(cheminf, nomf);
     
     fp = fopen(cheminf, "w");

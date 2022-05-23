@@ -202,23 +202,6 @@ char * lire_manuel();
 void envoi_repertoire(int numclient);
 
 /**
- * @brief Récupère un fichier envoyé par le client
- * 
- * @param socket Socket du client
- * @param nomfichier Nom du fichier à recevoir
- * @param taillefichier Taille du fichier à recevoir
- */
-void recup_fichier(int socket, char * nomfichier, long taillefichier);
-
-/**
- * @brief Envoi d'un fichier à un client
- * 
- * @param numclient Indice du client dans le tableau
- * @param nomfichier Nom du fichier à recevoir
- */
-void envoi_fichier(int numclient, char * nomfichier);
-
-/**
  * @brief Analyse le message pour y reconnaître une commande (utilise reception message)
  * 
  * @param msg Message à analyser
