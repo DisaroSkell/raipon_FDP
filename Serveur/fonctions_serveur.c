@@ -1166,16 +1166,11 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
 char * censure(char * message) {
     FILE * censure;
-    FILE * characters;
     char * nomcheminCen = (char *) malloc((strlen("Public/Censure")+1)*sizeof(char));
     strcpy(nomcheminCen, "Public/Censure");
     censure = fopen(nomcheminCen, "r");
     if (censure == NULL) {
         perror("Erreur durant la lecture du fichier de mots censurés, non trouvé");
-        return message;
-    }
-    if (characters == NULL) {
-        perror("Erreur durant la lecture du fichier de caractères spéciaux");
         return message;
     }
     char * m = (char *) malloc(20*sizeof(char));

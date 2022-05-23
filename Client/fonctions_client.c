@@ -188,7 +188,6 @@ void * thread_fichier(void * argpointer) {
         perror("Erreur dans la création de la socket");
         exit(0);
     }
-    printf("Socket Créé\n");
 
     struct sockaddr_in aS;
     aS.sin_family = AF_INET;
@@ -201,8 +200,6 @@ void * thread_fichier(void * argpointer) {
         perror("Erreur envoi demmande de connexion");
         exit(0);
     }
-
-    printf("Socket Connecté\n");
 
     recup_fichier(dS, args->nomf, args->taillef);
 
@@ -257,7 +254,6 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
             perror("Erreur dans la création de la socket");
             exit(0);
         }
-        printf("Socket Créé\n");
 
         struct sockaddr_in ad;
         ad.sin_family = AF_INET;
@@ -269,15 +265,11 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
             exit(0);
         }
 
-        printf("Socket Nommé\n");
-
         int lstn = listen(sock, 7);
         if (lstn == -1){
             perror("Erreur passage en écoute");
             exit(0);
         }
-
-        printf("Mode écoute\n");
 
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
