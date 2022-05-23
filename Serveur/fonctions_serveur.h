@@ -64,7 +64,7 @@ void * traitement_serveur(void * paramspointer);
 /**
  * @brief Envoi d'un message à un utilisateur par son indice dans le tableau clients
  * Envoi de la taille, puis du message
- * Forme du message : "<pseudo> : message"
+ * Forme du message : "[channel] <pseudo> : message"
  * 
  * @param numreceveur Indice du receveur dans le tableau clients
  * @param msg Message à envoyer
