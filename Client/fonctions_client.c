@@ -38,7 +38,7 @@ void * thread_reception(void * argpointer){
             exit(0);
         }
         else {
-            if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) { // CHANGER !!!
+            if (memcmp(msg, "/ef ", strlen("/ef ")) == 0) {
                 char * msgmodif = (char *) malloc((strlen(msg)-4)*sizeof(char));
                 strcpy(msgmodif, strtok(msg, "/")); // On enlève le début du message
                 
@@ -53,16 +53,15 @@ void * thread_reception(void * argpointer){
                 char * nomf = (char *) malloc(strlen(token)*sizeof(char));
                 strcpy(nomf, token);
 
-                token = strtok(token, " "); // On regarde la suite, ici : la taille du fichier
+                token = strtok(NULL, " "); // On regarde la suite, ici : la taille du fichier
 
                 if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                     perror("Il manque la taille du fichier après son nom !");
                     continue;
                 }
-
                 int taillef = atoi(token);
 
-                token = strtok(token, " "); // On regarde la suite, ici : l'IP du destinataire
+                token = strtok(NULL, " "); // On regarde la suite, ici : l'IP du destinataire
 
                 if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                     perror("Il manque l'IP du destinataire !");
@@ -212,13 +211,13 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     strcpy(nomchemin, "Public/");
     strcat(nomchemin, nomfichier);
 
-    fp = fopen(nomchemin, "r");
+    fp = fopen(nomchemin, "rb");
     if (fp == NULL) {
         perror("Erreur durant la lecture du fichier, non trouvé");
         return;
     }
 
-    char data[SIZE] = {0};
+    char data[SIZE];
 
     long int taillefichier;
 
@@ -279,17 +278,20 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
             }
 
     // On envoie le fichier
-    while(fgets(data, SIZE, fp) != NULL) {
-        ssize_t envoi = send(dSC, data, SIZE, 0);
+    int read;
+    while( (read = (int)fread(data, sizeof(char), SIZE, fp)) > 0) {
+        printf("int lus : %d\n",read);
+        ssize_t envoi = send(dSC, data, read, 0);
         if (envoi == -1) {
             perror("Erreur dans l'envoi du fichier");
             return;
         }
-
-        bzero(data, SIZE);
+        printf("int envoyés : %d\n\n",(int)envoi);
+       // bzero(data, SIZE);
     }
 
     printf("Fichier envoyé !\n");
+    shutdown(dSC, 2);
     fclose(fp);
 }
 
@@ -303,21 +305,23 @@ void recup_fichier(int dS, char * nomf, long taillef) {
     strcpy(cheminf, "Public/rcv/");
     strcat(cheminf, nomf);
     
-    fp = fopen(cheminf, "w");
+    fp = fopen(cheminf, "wb");
     
     ssize_t rcv_f;
-    while (ftell(fp) < taillef) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
-        rcv_f = recv(dS, buffer, SIZE, 0);
+    while (1) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
+        rcv_f = recv(dS, buffer, sizeof(char)*SIZE, 0);
+                
+        printf("short int recus : %d\n\n",(int)rcv_f);
         if (rcv_f == -1) {
             perror("Erreur de reception du fichier !");
             return;
         }
         if (rcv_f == 0) {
-            perror("Erreur de connexion au client !");
-            return;
+            break;
         }
-
-        fprintf(fp, "%s", buffer);
+        
+        fwrite(buffer, sizeof(char), SIZE, fp);
+        //printf("int lus : %d\n",read);
     }
 
     fclose(fp);
