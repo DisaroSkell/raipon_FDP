@@ -15,6 +15,10 @@
 
 - /channel
     Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
-    
+
+- /creerchannel (OU /cc) [nom du channel] [description du channel]
+    Permet de créer un nouveau channel (s'il y a de la place)
+    /!\ Le channel doit être en un seul mot, sinon ça ira dans la description /!\
+
 - /membres
     Permet de lister les membres du channel que vous occupez.

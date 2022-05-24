@@ -77,7 +77,7 @@ void* traitement_serveur(void * paramspointer){
 
         printf("%d: Message reçu : %s\n", numclient, msg);
 
-        commande cmd = gestion_commande(msg);
+        commande cmd = gestion_commande(msg, numclient, numchan, posclient);
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
             int destinataire = chercher_client(cmd.user, nb_clients_max*nb_channels_max, clients);
 
@@ -150,6 +150,29 @@ void* traitement_serveur(void * paramspointer){
                             bienvenue(numclient, numchan);
                         }
                     }
+                }
+            }
+        }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "cc") == 0) {
+            if (chercher_channel(cmd.nomf) != -1) {
+                envoi_direct(numclient, "Channel déjà existant. /channel pour les voir tous.\n", "Serveur", "Serveur");
+            } else {
+                if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+
+                int i = chercher_place_chan(nb_channels_max, channels);
+
+                if (i != nb_channels_max) {
+                    channels[i].nom = (char *) malloc(strlen(cmd.nomf)*sizeof(char));
+                    strcpy(channels[i].nom, cmd.nomf);
+
+                    channels[i].description = (char *) malloc(strlen(cmd.message)*sizeof(char));
+                    strcpy(channels[i].description, cmd.message);
+                    sem_post(&sem_tab_channels);
+
+                    envoi_direct(numclient, "Le channel a bien été créé !\n", "Serveur", "Serveur");
+                } else {
+                    sem_post(&sem_tab_channels);
+                    envoi_direct(numclient, "Il y a déjà trop de channels. Action refusée. (désolé)", "Serveur", "Serveur");
                 }
             }
         }
@@ -265,7 +288,7 @@ int chercher_client(char * pseudo, int taille, client tabcli[taille]) {
     return resultat;
 }
 
-int chercher_place(int taille, client tabcli[taille]) {
+int chercher_place_cli(int taille, client tabcli[taille]) {
     int resultat = -1;
     int i = 0;
 
@@ -296,6 +319,21 @@ int chercher_channel(char * nom) {
     return resultat;
 }
 
+int chercher_place_chan(int taille, channel tabchan[taille]) {
+    int resultat = -1;
+    int i = 0;
+
+    while (i < taille && resultat == -1) {
+        if (strcmp(tabchan[i].nom, "") == 0) {
+            resultat = i;
+        }
+
+        i++;
+    }
+
+    return resultat;
+}
+
 int changer_channel(int numclient, int numchan1, int numchan2) {
     // Client vide, utilisé pour remplacer le client sortant
     client init;
@@ -311,7 +349,7 @@ int changer_channel(int numclient, int numchan1, int numchan2) {
     }
 
     if (numchan2 !=-1) {
-        int placelibre = chercher_place(nb_clients_max, channels[numchan2].occupants);
+        int placelibre = chercher_place_cli(nb_clients_max, channels[numchan2].occupants);
         if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
             result = -2;
         } else {
@@ -651,7 +689,7 @@ void envoi_fichier(int numclient, char * nomfichier) {
     printf("Fichier envoyé à %s !\n", clients[numclient].pseudo);
 }
 
-commande gestion_commande(char * slashmsg) {
+commande gestion_commande(char * slashmsg, int numclient, int numchan, int posclient) {
     commande result;
     result.id_op = 0;
     result.nom_cmd = "";
@@ -699,7 +737,7 @@ commande gestion_commande(char * slashmsg) {
             token = strtok(NULL, " "); // On regarde la suite, ici: le message
 
             if (token == NULL) {
-                perror("Vous devez mettre l'un message après l'utilisateur !");
+                perror("Vous devez mettre un message après l'utilisateur !");
                 result.id_op = -1;
                 return result;
             }
@@ -725,7 +763,7 @@ commande gestion_commande(char * slashmsg) {
             result.nom_cmd = (char *) malloc(strlen("manuel")*sizeof(char));
             strcpy(result.nom_cmd, "manuel");
         }
-        else if (strcmp(cmd,"ef") == 0) {
+        else if (strcmp(cmd,"ef") == 0 || strcmp(cmd,"envoifichier") == 0) {
             result.nom_cmd = (char *) malloc(3*sizeof(char));
             strcpy(result.nom_cmd, "ef");
 
@@ -750,7 +788,7 @@ commande gestion_commande(char * slashmsg) {
 
             result.taillef = atoi(token);
         }
-        else if (strcmp(cmd,"rf") == 0 || strcmp(cmd,"rf\n") == 0) {
+        else if (strcmp(cmd,"rf") == 0 || strcmp(cmd,"rf\n") == 0 || strcmp(cmd,"receptionfichier") == 0 || strcmp(cmd,"receptionfichier\n") == 0) {
             result.nom_cmd = (char *) malloc(3*sizeof(char));
             strcpy(result.nom_cmd, "rf");
 
@@ -790,6 +828,58 @@ commande gestion_commande(char * slashmsg) {
                     strcpy(result.nomf, token);
                 }
             }
+        }
+        else if (strcmp(cmd,"creerchannel") == 0 || strcmp(cmd,"cc") == 0) {
+            result.nom_cmd = (char *) malloc(3*sizeof(char));
+            strcpy(result.nom_cmd, "cc");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le nom du channel
+
+            if (token == NULL) {
+                perror("Vous devez mettre le channel après /cc !");
+                result.id_op = -1;
+                return result;
+            }
+
+            // On triche un peu pour pas surcharger la struct
+            result.nomf = malloc(strlen(token)*sizeof(char));
+            strcpy(result.nomf,token);
+
+            token = strtok(NULL, "\0"); // On regarde la suite, ici: la description
+
+            if (token == NULL) {
+                perror("Vous devez mettre une description après le nom du channel !");
+                result.id_op = -1;
+                return result;
+            }
+
+            // La longueur de la description à utiliser, c'est la longueur de la commande sans le slash (msg) sans la commande (result.nom_cmd) et sans le nom du channel (result.nomf) (-2 avec les 2 espaces)
+            char * desc = (char *) malloc((strlen(msg)-strlen(result.nom_cmd)-strlen(result.nomf)-2)*sizeof(char));
+            
+            strcpy(desc, token);
+
+            while (desc[strlen(desc)-1] != '\n') {
+                char * part1 = (char *) malloc((strlen(desc)+1)*sizeof(char));
+                strcpy(part1, desc);
+
+                char * part2 = reception_message(numclient, numchan, posclient);
+
+                printf("ICI\n");
+
+                free(desc);
+
+                desc = (char *) malloc((strlen(part1)+strlen(part2)+1)*sizeof(char));
+                strcpy(desc, part1);
+                strcat(desc, part2);
+
+                printf("%s part1 %p\n", part1, part1);
+                printf("LA\n");
+
+                free(part1);
+                free(part2);
+            }
+
+            result.message = desc;
         }
         else if (strcmp(cmd,"membres\n") == 0) {
             result.nom_cmd = (char *) malloc(7*sizeof(char));

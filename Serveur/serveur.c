@@ -55,20 +55,6 @@ int main(int argc, char *argv[]) {
     channels[i] = blank;
   }
 
-  // Channel d'essai, à supprimer
-  channel essai;
-  essai.nom = (char *) malloc(6*sizeof(char));
-  strcpy(essai.nom, "Fleur");
-  essai.description = (char *) malloc(25*sizeof(char));
-  strcpy(essai.description, "Le channel des FLEUUUURS");
-
-  for (int i = 0; i < nb_clients_max; i++) {
-    essai.occupants[i] = init;
-  }
-
-  channels[0] = essai;
-  // Fin de la section à supprimer
-
   int dS = socket(PF_INET, SOCK_STREAM, 0);
   if (dS == -1){
     perror("Erreur dans la création de la socket");
@@ -110,7 +96,7 @@ int main(int argc, char *argv[]) {
     int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
 
     if (sem_wait(&sem_tab_clients) == -1) perror("Erreur blocage sémaphore");
-    i = chercher_place(nb_clients_max*nb_channels_max, clients);
+    i = chercher_place_cli(nb_clients_max*nb_channels_max, clients);
     sem_post(&sem_tab_clients);
 
     if (i == -1) {

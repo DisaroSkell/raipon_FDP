@@ -103,7 +103,7 @@ int chercher_client(char * pseudo, int taille, client tabcli[taille]);
  * @param tabcli Tableau de clients, chaque client est supposé soit "vide" soit unique
  * @return Si aucune place n'est trouvée la taille du tableau, sinon l'index de la première place trouvée
  */
-int chercher_place(int taille, client tabcli[taille]);
+int chercher_place_cli(int taille, client tabcli[taille]);
 
 /**
  * @brief Cherche un channel dans le tableau channels par nom. Renvoie une erreur si deux channels ont le même nom.
@@ -112,6 +112,16 @@ int chercher_place(int taille, client tabcli[taille]);
  * @return -1 si non trouvé, l'index dans le tableau channels sinon
  */
 int chercher_channel(char * nom);
+
+/**
+ * @brief Cherche une place dans le tableau channels
+ * 
+ * @param taille Taille du tableau qui suit
+ * @param tabchan Tableau de channels, chaque channel est supposé soit "vide" soit unique
+ * @return Si aucune place n'est trouvée la taille du tableau, sinon l'index de la première place trouvée
+ */
+int chercher_place_chan(int taille, channel tabcchan[taille]);
+
 
 /**
  * @brief Déplace un utilisateur d'un channel à un autre. Modifie le tableau channels.
@@ -198,12 +208,15 @@ void recup_fichier(int socket, char * nomfichier, long taillefichier);
 void envoi_fichier(int numclient, char * nomfichier);
 
 /**
- * @brief Analyse le message pour y reconnaître une commande
+ * @brief Analyse le message pour y reconnaître une commande (utilise reception message)
  * 
  * @param msg Message à analyser
+ * @param numclient Indice du client dans le tableau
+ * @param numchan Index du channel dans le tableau channels
+ * @param posclient Index du client dans le tableau des occupant du channel numchan
  * @return Un objet commande, cf la struct pour plus d'info de retour
  */
-commande gestion_commande(char * msg);
+commande gestion_commande(char * msg, int numclient, int numchan, int posclient);
 
 /**
  * @brief Gestion du signal CTRL C serveur
