@@ -275,6 +275,9 @@ void* traitement_serveur(void * paramspointer){
                 }
             }
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "turnoff") == 0) {
+            fermeture_serveur();
+        }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", -10);
         }
@@ -916,6 +919,17 @@ void envoi_repertoire(int numclient) {
     closedir(mydir);
 }
 
+void fermeture_serveur() {
+    for(int i = 0; i < nb_clients_max; i++){
+        if (clients[i].socket != 0) {
+            envoi_direct(i, "Fermeture du serveur\n", "Serveur", "Serveur");
+        }
+    }
+
+    printf("Fin du programme\n");
+    exit(0);
+}
+
 commande gestion_commande(char * slashmsg, int numclient, int numchan, int posclient) {
     commande result;
     result.id_op = 0;
@@ -1241,6 +1255,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
                     strcpy(result.nomf, token);
                 }
             }
+        }
+        else if (strcmp(cmd, "turnoff") == 0 || strcmp(cmd,"turnoff\n") == 0) {
+            result.nom_cmd = (char *) malloc(strlen("turnoff")*sizeof(char));
+            strcpy(result.nom_cmd, "turnoff");
         }
         else {
             perror("Commande non reconnue");

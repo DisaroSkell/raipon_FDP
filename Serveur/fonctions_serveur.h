@@ -98,13 +98,6 @@ char * reception_message(int numclient, int numchan, int posclient);
 int chercher_client(char * pseudo, int taille, client tabcli[taille]);
 
 /**
-* @brief Envoie la liste des clients connectés au serveur et dans les salons
-*
-* @return un message disant que personne n'est connecté s'il n'y a personne de connecté , la liste des personnes connectées sinon
-*/
-char * lister_client_co();
-
-/**
  * @brief Cherche une place dans le tableau clients
  * 
  * @param taille Taille du tableau qui suit
@@ -209,7 +202,16 @@ char * lire_manuel();
 void envoi_repertoire(int numclient);
 
 /**
+<<<<<<< HEAD
  * @brief Analyse le message pour y reconnaître une commande (utilise reception message)
+=======
+ * @brief Ferme le serveur
+ */
+void fermeture_serveur();
+
+/**
+ * @brief Analyse le message pour y reconnaître une commande
+>>>>>>> 6f43dcd (commande fermeture erreur)
  * 
  * @param msg Message à analyser
  * @param numclient Indice du client dans le tableau
