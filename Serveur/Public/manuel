@@ -20,5 +20,8 @@
     Permet de créer un nouveau channel (s'il y a de la place)
     /!\ Le channel doit être en un seul mot, sinon ça ira dans la description /!\
 
+- /supprimerchannel (OU /sc) [nom du channel]
+    Permet de supprimer un des channels existant
+
 - /membres
     Permet de lister les membres du channel que vous occupez.
