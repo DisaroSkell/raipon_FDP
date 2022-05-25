@@ -53,7 +53,7 @@ int envoi_message(int socket, char * msg) {
         }
         else printf("Message envoyé:\n%s\n", message);
     }
-
+    free(message);
     return resultat;
 }
 
@@ -101,6 +101,7 @@ void* traitement_serveur(void * paramspointer){
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
             envoi_direct(numclient, lire_manuel(), "Serveur", -10);
+            free(lire_manuel());
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) { // On récupère un fichier de la part du client
             int destinataire = chercher_client(cmd.user, nb_clients_max*nb_channels_max, clients);
@@ -122,6 +123,8 @@ void* traitement_serveur(void * paramspointer){
             strcat(co, clients[numclient].IP);
             
             envoi_message(clients[destinataire].socket, co);
+            free(taillefichier);
+            free(co);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             if (cmd.taillef == -1) { // On envoie la liste des channels
@@ -329,7 +332,7 @@ int envoi_direct(int numreceveur, char * msg, char * expediteur, int numchan) {
         }
         else printf("Message Envoyé au client %d (%s):\n%s\n", socketreceveur, clients[numreceveur].pseudo, message);
     }
-
+    free(message);
     return resultat;
 }
 
@@ -825,6 +828,7 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
             // La longueur du message à envoyer, c'est la longueur de la commande sans le slash (msg) sans la commande (result.nom_cmd) et sans l'utilisateur (result.user) (-2 avec les 2 espaces)
             char * mp = (char *) malloc((strlen(msg)-strlen(result.nom_cmd)-strlen(result.user)-2)*sizeof(char));
+            free(msg);
             strcpy(mp,"");
 
             while (token != NULL) {
@@ -1074,6 +1078,8 @@ char * censure(char * message) {
         str_replace(message, m, replace);
     }
     fclose(censure);
+    free(nomcheminCen);
+    free(m);
     return message;
 }
 

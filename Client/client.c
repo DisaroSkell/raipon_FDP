@@ -88,6 +88,7 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   else printf("%s\n", msg);
+  free(msg);
 
   pthread_t idt;
 

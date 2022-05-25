@@ -177,6 +177,8 @@ int main(int argc, char *argv[]) {
     }
 
     fclose(fp);
+    free(nomchemin);
+    free(m);
 
     envoi_message(dSC, "Bienvenue sur le serveur !\n");
 

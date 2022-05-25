@@ -84,6 +84,7 @@ void * thread_reception(void * argpointer){
                 printf("\n");
                 printf("%s", msg);
             }
+            free(msg);
         }
     }
 }
@@ -155,7 +156,7 @@ int envoi_message(int socket, char * msg) {
         }
         else printf("Message envoyé:\n%s\n", message);
     }
-
+    free(message);
     return resultat;
 }
 
@@ -243,6 +244,8 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     strcat(commande, destinataire);
     
     envoi_message(dS, commande);
+    free(commande);
+    free(taillef);
 
     // On crée une nouvelle socket de type serveur
 
@@ -293,6 +296,7 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     printf("Fichier envoyé !\n");
     shutdown(dSC, 2);
     fclose(fp);
+    free(nomchemin);
 }
 
 void recup_fichier(int dS, char * nomf, long taillef) {
@@ -326,6 +330,7 @@ void recup_fichier(int dS, char * nomf, long taillef) {
     }
 
     fclose(fp);
+    free(cheminf);
     printf("Fin de la réception du fichier %s\n", nomf);
 }
 
