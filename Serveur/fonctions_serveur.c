@@ -176,8 +176,25 @@ void* traitement_serveur(void * paramspointer){
                 }
             }
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mc") == 0) {
+            if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+
+            int indice = chercher_channel(cmd.nomf);
+            if (indice == -1) {
+                envoi_direct(numclient, "Channel non existant. /channel pour les voir tous.\n", "Serveur", -10);
+                sem_post(&sem_tab_channels);
+            } else {
+                channels[indice].description = (char *) malloc((strlen(cmd.message + 1)*sizeof(char)));
+                strcpy(channels[indice].description, cmd.message);
+
+                sem_post(&sem_tab_channels);
+
+                envoi_direct(numclient, "Le channel a bien été modifié !\n", "Serveur", -10);
+            }
+        }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "sc") == 0) {
             if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+            
             int indice = chercher_channel(cmd.nomf);
             if (indice == -1) {
                 envoi_direct(numclient, "Channel non existant. /channel pour les voir tous.\n", "Serveur", -10);
@@ -893,6 +910,53 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
             if (token == NULL) {
                 perror("Vous devez mettre le channel après /cc !");
+                result.id_op = -1;
+                return result;
+            }
+
+            // On triche un peu pour pas surcharger la struct
+            result.nomf = malloc(strlen(token)*sizeof(char));
+            strcpy(result.nomf,token);
+
+            token = strtok(NULL, "\0"); // On regarde la suite, ici: la description
+
+            if (token == NULL) {
+                perror("Vous devez mettre une description après le nom du channel !");
+                result.id_op = -1;
+                return result;
+            }
+
+            // La longueur de la description à utiliser, c'est la longueur de la commande sans le slash (msg) sans la commande (result.nom_cmd) et sans le nom du channel (result.nomf) (-2 avec les 2 espaces)
+            char * desc = (char *) malloc((strlen(msg)-strlen(result.nom_cmd)-strlen(result.nomf)-2)*sizeof(char));
+            
+            strcpy(desc, token);
+
+            while (desc[strlen(desc)-1] != '\n') {
+                char * part1 = (char *) malloc((strlen(desc)+1)*sizeof(char));
+                strcpy(part1, desc);
+
+                char * part2 = reception_message(numclient, numchan, posclient);
+
+                free(desc);
+
+                desc = (char *) malloc((strlen(part1)+strlen(part2)+1)*sizeof(char));
+                strcpy(desc, part1);
+                strcat(desc, part2);
+
+                free(part1);
+                free(part2);
+            }
+
+            result.message = desc;
+        }
+        else if (strcmp(cmd,"modifierchannel") == 0 || strcmp(cmd,"mc") == 0) {
+            result.nom_cmd = (char *) malloc(3*sizeof(char));
+            strcpy(result.nom_cmd, "mc");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le nom du channel
+
+            if (token == NULL) {
+                perror("Vous devez mettre le channel après /mc !");
                 result.id_op = -1;
                 return result;
             }

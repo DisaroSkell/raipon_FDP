@@ -20,6 +20,9 @@
     Permet de créer un nouveau channel (s'il y a de la place)
     /!\ Le channel doit être en un seul mot, sinon ça ira dans la description /!\
 
+- /modifierchannel (OU /mc) [nom du channel] [description du channel]
+    Permet de modifier la description d'un channel existant
+
 - /supprimerchannel (OU /sc) [nom du channel]
     Permet de supprimer un des channels existant
 
