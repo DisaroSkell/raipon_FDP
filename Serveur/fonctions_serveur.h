@@ -69,10 +69,10 @@ void * traitement_serveur(void * paramspointer);
  * @param numreceveur Indice du receveur dans le tableau clients
  * @param msg Message à envoyer
  * @param envoyeur Pseudo de l'envoyeur
- * @param chan Channel où écrit l'envoyeur
+ * @param numchan Indice du channel où écrit l'envoyeur dans le tableau channels (-1 = Général; -2 = Direct; autre c'est rien)
  * @return 0 si tout se passe bien, -1 si erreur d'envoi
  */
-int envoi_direct(int numreceveur, char * msg, char * envoyeur, char * chan);
+int envoi_direct(int numreceveur, char * msg, char * envoyeur, int numchan);
 
 /**
  * @brief Reception d'un message du client numclient dans le tableau clients
