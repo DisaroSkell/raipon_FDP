@@ -176,6 +176,23 @@ void* traitement_serveur(void * paramspointer){
                 }
             }
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "sc") == 0) {
+            int indice = chercher_channel(cmd.nomf);
+            if (indice == -1) {
+                envoi_direct(numclient, "Channel non existant. /channel pour les voir tous.\n", "Serveur", "Serveur");
+            } else {
+                // Channel vide
+                channel blank;
+                blank.nom = "";
+                blank.description = "";
+
+                channels[indice] = blank;
+
+                envoi_direct(numclient, "Le channel a bien été supprimé !\n", "Serveur", "Serveur");
+
+                sem_post(&sem_tab_channels);
+            }
+        }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "membres") == 0) {
             envoi_membres(numclient, numchan);
         }
@@ -880,6 +897,22 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             }
 
             result.message = desc;
+        }
+        else if (strcmp(cmd,"supprimerchannel") == 0 || strcmp(cmd,"sc") == 0) {
+            result.nom_cmd = (char *) malloc(3*sizeof(char));
+            strcpy(result.nom_cmd, "sc");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le nom du channel
+
+            if (token == NULL) {
+                perror("Vous devez mettre le channel après /sc !");
+                result.id_op = -1;
+                return result;
+            }
+
+            // On triche un peu pour pas surcharger la struct
+            result.nomf = malloc(strlen(token)*sizeof(char));
+            strcpy(result.nomf,token);
         }
         else if (strcmp(cmd,"membres\n") == 0) {
             result.nom_cmd = (char *) malloc(7*sizeof(char));
