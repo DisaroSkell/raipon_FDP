@@ -320,8 +320,9 @@ void recup_fichier(int dS, char * nomf, long taillef) {
             break;
         }
         
-        fwrite(buffer, sizeof(char), SIZE, fp);
+        fwrite(buffer, sizeof(char), rcv_f, fp);
         //printf("int lus : %d\n",read);
+
     }
 
     fclose(fp);
