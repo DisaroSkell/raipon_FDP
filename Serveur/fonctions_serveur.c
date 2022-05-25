@@ -161,7 +161,7 @@ void* traitement_serveur(void * paramspointer){
 
                 int i = chercher_place_chan(nb_channels_max, channels);
 
-                if (i != nb_channels_max) {
+                if (i != -1) {
                     channels[i].nom = (char *) malloc(strlen(cmd.nomf)*sizeof(char));
                     strcpy(channels[i].nom, cmd.nomf);
 
@@ -172,7 +172,7 @@ void* traitement_serveur(void * paramspointer){
                     envoi_direct(numclient, "Le channel a bien été créé !\n", "Serveur", -10);
                 } else {
                     sem_post(&sem_tab_channels);
-                    envoi_direct(numclient, "Il y a déjà trop de channels. Action refusée. (désolé)", "Serveur", -10);
+                    envoi_direct(numclient, "Il y a déjà trop de channels. Action refusée. (désolé)\n", "Serveur", -10);
                 }
             }
         }
@@ -637,6 +637,84 @@ void envoi_channels(int numclient) {
     }
 }
 
+void sauvegarde_channels() {
+    FILE * f = fopen("Public/channels", "w");
+    
+    if (f == NULL) {
+        perror("Fichier channels indisponible");
+        fclose(f);
+        return;
+    }
+
+    for(int i = 0; i < nb_channels_max; i++) {
+        if(strcmp(channels[i].nom, "") != 0) {
+            fprintf(f, "%s ", channels[i].nom);
+            fprintf(f, "%s\n", channels[i].description);
+        }
+    }
+
+    fclose(f);
+    printf("Fin de la sauvegarde des channels\n");
+}
+
+void restaurer_channels() {
+    FILE * f = fopen("Public/channels", "rb");
+
+    if (f == NULL) {
+        perror("Fichier channels indisponible");
+        fclose(f);
+        return;
+    }
+
+    char * buffer;
+    fseek (f, 0, SEEK_END);
+    long length = ftell (f);
+    fseek (f, 0, SEEK_SET);
+    buffer = malloc (length);
+    if (buffer) {
+        fread (buffer, 1, length, f);
+    } else {
+        perror("Problème dans la lecture du fichier.");
+        return;
+    }
+
+    printf("Le fichier: %s\n", buffer);
+
+    char * token = strtok(buffer, " ");
+    int i = 0;
+
+    if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+
+    while (token) {
+        channels[i].nom = (char *) malloc(strlen(token)*sizeof(char));
+        strcpy(channels[i].nom, token);
+
+        token = strtok(NULL, "\n");
+
+        if (token) {
+            channels[i].description = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(channels[i].description, token);
+            printf("Token après espace n: %s\n", token);
+        }
+
+        i++;
+
+        token = strtok(NULL, " ");
+
+        printf("Token après backslash n: %s\n", token);
+    }
+
+    sem_post(&sem_tab_channels);
+
+    printf("Les channels:\n");
+    for(int i = 0; i < nb_channels_max; i++) {
+        printf("\t- [%s]: %s\n", channels[i].nom, channels[i].description);
+    }
+
+    fclose(f);
+    printf("Fin de la restauration des channels\n");
+}
+
 char * lire_manuel() {
     char * buffer = 0;
     long length;
@@ -1040,6 +1118,8 @@ void signal_handle(int sig){
             envoi_direct(i, "Fermeture du serveur\n", "Serveur", -10);
         }
     }
+
+    sauvegarde_channels();
 
     printf("Fin du programme\n");
     exit(0);

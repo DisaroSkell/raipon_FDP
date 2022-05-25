@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
     channels[i] = blank;
   }
 
+  restaurer_channels();
+
   int dS = socket(PF_INET, SOCK_STREAM, 0);
   if (dS == -1){
     perror("Erreur dans la création de la socket");

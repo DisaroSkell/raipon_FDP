@@ -177,6 +177,16 @@ void envoi_membres(int numclient, int numchan);
 void envoi_channels(int numclient);
 
 /**
+ * @brief Sauvegarde le nom et la description des channels dans Public/channels
+ */
+void sauvegarde_channels();
+
+/**
+ * @brief Restaure le nom et la description des channels depuis Public/channels 
+ */
+void restaurer_channels();
+
+/**
  * @brief Consulte le fichier Public/manuel (source: https://www.codegrepper.com/code-examples/c/c+read+file+into+string)
  * 
  * @return Le manuel lu en String
