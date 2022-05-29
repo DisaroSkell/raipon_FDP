@@ -180,8 +180,6 @@ int main(int argc, char *argv[]) {
     free(nomchemin);
     free(m);
 
-    envoi_message(dSC, "Bienvenue sur le serveur !\n");
-
     pthread_t new;
     t[i] = new;
 
@@ -189,9 +187,11 @@ int main(int argc, char *argv[]) {
     clients[i].socket = dSC;
     clients[i].pseudo = pseudo;
     clients[i].IP = inet_ntoa(aC.sin_addr);
+    sem_post(&sem_tab_clients);
+
+    bienvenue(i, -1);
 
     printf("clients[%d] = %d, IP = %s\n", i, clients[i].socket, clients[i].IP);
-    sem_post(&sem_tab_clients);
 
     int thread = pthread_create(&t[i], NULL, traitement_serveur, &params);
     if (thread != 0){

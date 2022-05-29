@@ -139,7 +139,7 @@ int changer_channel(int numclient, int numchan1, int numchan2);
  * Envoie un message spécial de bienvenue au client avec la description du channel.
  * 
  * @param numclient Index du client dans le tableau clients
- * @param numchan Index du channel dans le tableau channels
+ * @param numchan Index du channel dans le tableau channels; -1 = Général
  * @return -1 si problème d'envoi
  */
 int bienvenue(int numclient, int numchan);

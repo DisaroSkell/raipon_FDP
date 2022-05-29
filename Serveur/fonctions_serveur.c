@@ -463,33 +463,66 @@ int bienvenue(int numclient, int numchan) {
 
     // On les stock pour éviter d'y accéder plusieurs fois
     char * pseudo = clients[numclient].pseudo;
-    char * nomchan = channels[numchan].nom;
-    char * descchan = channels[numchan].description;
+    char * nomchan;
+    char * descchan;
+
+    if (numchan == -1) {
+        nomchan = "Général";
+        descchan = "";
+    } else {
+        nomchan = channels[numchan].nom;
+        descchan = channels[numchan].description;
+    }
 
     // On va envoyer "[[nomchannel]] Bienvenue à [pseudo] dans le channel!\n" à tous les membres du channel
+    // OU                           "---------------------sur le serveur!\n" mais on prend la plus grand taille
     char * message1 = (char *) malloc((1 + strlen(nomchan) + 14 + strlen(pseudo) + 18)*sizeof(char));
-    strcpy(message1, "[");
-    strcat(message1, nomchan);
-    strcat(message1, "] Bienvenue à ");
-    strcat(message1, pseudo);
-    strcat(message1, " dans le channel!\n");
+    if (numchan == -1) {
+        strcpy(message1, "Bienvenue à ");
+        strcat(message1, pseudo);
+        strcat(message1, " sur le serveur!\n");
+    } else {
+        strcpy(message1, "[");
+        strcat(message1, nomchan);
+        strcat(message1, "] Bienvenue à ");
+        strcat(message1, pseudo);
+        strcat(message1, " dans le channel!\n");
+    }
 
-    // On va envoyer "Vous arrivez dans le channel [nom du channel]:\n[description]\n" au client
-    char * message2 = (char *) malloc((29 + strlen(nomchan) + 2 + strlen(descchan) + 1)*sizeof(char));
-    strcpy(message2, "Vous arrivez dans le channel ");
-    strcat(message2, nomchan);
-    strcat(message2, ":\n");
-    strcat(message2, descchan);
-    strcat(message2, "\n");
+    char * message2;
+    if (numchan == -1) {
+        message2 = "Bienvenue sur le serveur !\n";
+    } else {
+        // On va envoyer "Vous arrivez dans le channel [nom du channel]:\n[description]\n" au client
+        message2 = (char *) malloc((29 + strlen(nomchan) + 2 + strlen(descchan) + 1)*sizeof(char));
+        strcpy(message2, "Vous arrivez dans le channel ");
+        strcat(message2, nomchan);
+        strcat(message2, ":\n");
+        strcat(message2, descchan);
+        strcat(message2, "\n");
+    }
 
-    for (int i = 0; i < nb_clients_max; i++) {
-        if (channels[numchan].occupants[i].socket != 0) {
-            if (strcmp(channels[numchan].occupants[i].pseudo, clients[numclient].pseudo) == 0) {
-                if (envoi_message(channels[numchan].occupants[i].socket, message2) == -1) {
+    client * tab;
+
+    if (numchan == -1) {
+        tab = clients;
+    } else {
+        tab = channels[numchan].occupants;
+    }
+
+    int taille = nb_clients_max;
+    if (numchan == -1) {
+        taille *= nb_channels_max;
+    }
+
+    for (int i = 0; i < taille; i++) {
+        if (tab[i].socket != 0) {
+            if (strcmp(tab[i].pseudo, clients[numclient].pseudo) == 0) {
+                if (envoi_message(tab[i].socket, message2) == -1) {
                     result = -1;
                 }
             } else {
-                if (envoi_message(channels[numchan].occupants[i].socket, message1) == -1) {
+                if (envoi_message(tab[i].socket, message1) == -1) {
                     result = -1;
                 }
             }
