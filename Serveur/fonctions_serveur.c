@@ -79,19 +79,25 @@ void* traitement_serveur(void * paramspointer){
 
         commande cmd = gestion_commande(msg, numclient, numchan, posclient);
         if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mp") == 0) { // On envoie un mp
+            free(cmd.nom_cmd);
             int destinataire = chercher_client(cmd.user, nb_clients_max*nb_channels_max, clients);
 
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", -10);
             } else {
                 while (strchr(cmd.message, '\n') == NULL) {
-                    strcat(cmd.message, reception_message(numclient, numchan, posclient));
+                    char * boutmessage = reception_message(numclient, numchan, posclient);
+                    strcat(cmd.message, boutmessage);
+                    free(boutmessage);
                 }
                 cmd.message = censure(cmd.message);
+                
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo, -2);
+                free(cmd.message);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
+            free(cmd.nom_cmd);
             // On arrête tout
             envoi_direct(numclient, "Déconnexion en cours...\n", "Serveur", -10);
             
@@ -100,11 +106,16 @@ void* traitement_serveur(void * paramspointer){
             pthread_exit(0);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "manuel") == 0) { // On envoie le manuel
-            envoi_direct(numclient, lire_manuel(), "Serveur", -10);
-            free(lire_manuel());
+            free(cmd.nom_cmd);
+
+            char * manuel = lire_manuel();
+            envoi_direct(numclient, manuel, "Serveur", -10);
+            free(manuel);
         }
-        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) { // On récupère un fichier de la part du client
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "ef") == 0) { // On va connecter deux clients pour un envoi
+            free(cmd.nom_cmd);
             int destinataire = chercher_client(cmd.user, nb_clients_max*nb_channels_max, clients);
+            free(cmd.user);
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", -10);
             } else {
@@ -125,8 +136,10 @@ void* traitement_serveur(void * paramspointer){
             envoi_message(clients[destinataire].socket, co);
             free(taillefichier);
             free(co);
+            free(cmd.nomf);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
+            free(cmd.nom_cmd);
             if (cmd.taillef == -1) { // On envoie la liste des channels
                 envoi_channels(numclient);
             } else {
@@ -144,9 +157,12 @@ void* traitement_serveur(void * paramspointer){
                         strcpy(pleintxt,"Le channel ");
                         strcat(pleintxt, cmd.nomf);
                         strcat(pleintxt, " est plein.\n");
+                        free(cmd.nomf);
 
                         envoi_direct(numclient, pleintxt, "Serveur", -10);
+                        free(pleintxt);
                     } else {
+                        free(cmd.nomf);
                         if (numchan != -1) {
                             // On quitte le channel seulement si c'est pas le Général
                             aurevoir(numclient, numchan);
@@ -158,8 +174,6 @@ void* traitement_serveur(void * paramspointer){
                             posclient = place;
                         }
 
-                        chan = (char *) malloc(strlen(cmd.nomf)*sizeof(char));
-                        strcpy(chan, cmd.nomf);
                         if (numchan != -1) {
                             bienvenue(numclient, numchan);
                         }
@@ -168,7 +182,10 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "cc") == 0) {
+            free(cmd.nom_cmd);
             if (chercher_channel(cmd.nomf) != -1) {
+                free(cmd.nomf);
+                free(cmd.message);
                 envoi_direct(numclient, "Channel déjà existant. /channel pour les voir tous.\n", "Serveur", -10);
             } else {
                 if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
@@ -188,18 +205,25 @@ void* traitement_serveur(void * paramspointer){
                     sem_post(&sem_tab_channels);
                     envoi_direct(numclient, "Il y a déjà trop de channels. Action refusée. (désolé)\n", "Serveur", -10);
                 }
+                free(cmd.nomf);
+                free(cmd.message);
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "mc") == 0) {
+            free(cmd.nom_cmd);
             if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
 
             int indice = chercher_channel(cmd.nomf);
+            free(cmd.nomf);
             if (indice == -1) {
+                free(cmd.message);
                 envoi_direct(numclient, "Channel non existant. /channel pour les voir tous.\n", "Serveur", -10);
                 sem_post(&sem_tab_channels);
             } else {
+                free(channels[indice].description);
                 channels[indice].description = (char *) malloc((strlen(cmd.message + 1)*sizeof(char)));
                 strcpy(channels[indice].description, cmd.message);
+                free(cmd.message);
 
                 sem_post(&sem_tab_channels);
 
@@ -207,9 +231,11 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "sc") == 0) {
+            free(cmd.nom_cmd);
             if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
             
             int indice = chercher_channel(cmd.nomf);
+            free(cmd.nomf);
             if (indice == -1) {
                 envoi_direct(numclient, "Channel non existant. /channel pour les voir tous.\n", "Serveur", -10);
                 sem_post(&sem_tab_channels);
@@ -227,6 +253,8 @@ void* traitement_serveur(void * paramspointer){
                     }
                 }
                 
+                free(channels[indice].nom);
+                free(channels[indice].description);
                 channels[indice] = blank;
 
                 sem_post(&sem_tab_channels);
@@ -235,9 +263,11 @@ void* traitement_serveur(void * paramspointer){
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "membres") == 0) {
+            free(cmd.nom_cmd);
             envoi_membres(numclient, numchan);
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
+            free(cmd.nom_cmd);
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", -10);
         }
         else { // On envoie un message à tous les clients du channel
@@ -258,6 +288,7 @@ void* traitement_serveur(void * paramspointer){
                     strcat(erreur, " n'existe plus, retour dans le général.\n");
 
                     envoi_direct(numclient, erreur, "Serveur", -10);
+                    free(erreur);
 
                     numchan = -1;
                     chan = "Général";
@@ -530,6 +561,11 @@ int bienvenue(int numclient, int numchan) {
         }
     }
 
+    free(message1);
+    if (numchan != -1) {
+        free(message2);
+    }
+
     return result;
 }
 
@@ -567,6 +603,9 @@ int aurevoir(int numclient, int numchan) {
             }
         }
     }
+
+    free(message1);
+    free(message2);
 
     return result;
 }
@@ -607,6 +646,8 @@ void deconnexion(int numclient, int numchan, int posclient) {
             envoi_direct(i, message, "Serveur", -1);
         }
     }
+    
+    free(message);
     
     pthread_exit(0);
 }
@@ -660,6 +701,8 @@ void envoi_membres(int numclient, int numchan) {
             }
         }
     }
+
+    free(message);
 }
 
 void envoi_channels(int numclient) {
@@ -761,6 +804,8 @@ void restaurer_channels() {
         printf("\t- [%s]: %s\n", channels[i].nom, channels[i].description);
     }
 
+    free(buffer);
+
     fclose(f);
     printf("Fin de la restauration des channels\n");
 }
@@ -786,7 +831,9 @@ char * lire_manuel() {
     }
     else {
         perror("Problème dans la lecture du fichier");
-        return "Manuel actuellement indisponible.\n";
+        buffer = (char *) malloc((strlen("Manuel actuellement indisponible.\n")+1)*sizeof(char));
+        strcpy(buffer,"Manuel actuellement indisponible.\n");
+        return buffer;
     }
 }
 
@@ -830,6 +877,8 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
         if (token == NULL) {
             perror("Vous devez mettre quelque chose après ce / !");
             result.id_op = -1;
+            free(msg);
+            free(msgmodif);
             return result;
         }
 
@@ -846,6 +895,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre l'utilisateur après /mp !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             }
 
@@ -857,6 +909,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre un message après l'utilisateur !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.user);
                 return result;
             }
 
@@ -891,6 +947,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                 perror("Vous devez mettre le nom de fichier après /ef !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             }
             
@@ -902,6 +961,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                 perror("Vous devez mettre la taille du fichier après son nom !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.nomf);
                 return result;
             }
 
@@ -912,30 +975,14 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) { // Ne devrait pas arriver, mais on sait jamais
                 perror("Vous devez mettre le pseudo du destinataire après la taille !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.nomf);
                 return result;
             }
 
             result.user = token;
-        }
-        else if (strcmp(cmd,"rf") == 0 || strcmp(cmd,"rf\n") == 0 || strcmp(cmd,"receptionfichier") == 0 || strcmp(cmd,"receptionfichier\n") == 0) {
-            result.nom_cmd = (char *) malloc(3*sizeof(char));
-            strcpy(result.nom_cmd, "rf");
-
-            token = strtok(NULL, " "); // On regarde la suite, ici: le nom de fichier
-
-            if (token == NULL) { // S'il n'y en a pas on enverra la liste des fichiers
-                result.taillef = -1;
-            } else { // On donne le nom du fichier
-                // On doit évidemment enlever le \n
-                token = strtok(token, "\n");
-
-                if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant
-                    result.taillef = -1;
-                } else {
-                    result.nomf = (char *) malloc(strlen(token)*sizeof(char));
-                    strcpy(result.nomf, token);
-                }
-            }
         }
         else if (strcmp(cmd,"channel") == 0 || strcmp(cmd,"channel\n") == 0) {
             result.nom_cmd = (char *) malloc(8*sizeof(char));
@@ -967,6 +1014,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre le channel après /cc !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             }
 
@@ -979,6 +1029,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre une description après le nom du channel !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.nomf);
                 return result;
             }
 
@@ -1014,6 +1068,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre le channel après /mc !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             }
 
@@ -1026,6 +1083,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre une description après le nom du channel !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.nomf);
                 return result;
             }
 
@@ -1061,6 +1122,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) {
                 perror("Vous devez mettre le channel après /sc !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             }
 
@@ -1070,6 +1134,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant
                 perror("Vous devez mettre le channel après /sc !");
                 result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
                 return result;
             } else {
                 // On triche un peu pour pas surcharger la struct
@@ -1086,6 +1153,9 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             result.id_op = -1;
             return result;
         }
+
+        free(msg);
+        free(msgmodif);
     }
     return result;
 }

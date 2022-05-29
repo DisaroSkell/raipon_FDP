@@ -71,6 +71,8 @@ void * thread_reception(void * argpointer){
                 char * destinataire = (char *) malloc(strlen(token)*sizeof(char));
                 strcpy(destinataire, token);
 
+                free(msgmodif);
+
                 pthread_t t;
                 argsfichier argsf;
 
@@ -132,7 +134,11 @@ int lecture_message(int dS) {
     }
     else envoi_message(dS, m);
 
-    return strcmp(m, "/fin\n") != 0;
+    int result = strcmp(m, "/fin\n") != 0;
+
+    free(m);
+
+    return result;
 }
 
 int envoi_message(int socket, char * msg) {
@@ -177,6 +183,8 @@ void * thread_fichier(void * argpointer) {
 
     if (args->action == 1) { // Le client envoie le fichier
         envoi_fichier(args->socket, args->nomf, args->destinataire);
+        free(args->destinataire);
+        free(args->nomf);
         pthread_exit(0);
     }
 
@@ -192,6 +200,7 @@ void * thread_fichier(void * argpointer) {
     inet_pton(AF_INET,args->IP,&(aS.sin_addr));
     aS.sin_port = htons(8000);
     socklen_t lgA = sizeof(struct sockaddr_in);
+    free(args->IP);
 
     int co = connect(dS, (struct sockaddr *) &aS, lgA);
     if (co == -1){
@@ -200,6 +209,7 @@ void * thread_fichier(void * argpointer) {
     }
 
     recup_fichier(dS, args->nomf, args->taillef);
+    free(args->nomf);
 
     pthread_exit(0);
 }
