@@ -47,6 +47,11 @@ int envoi_message(int socket, char * msg);
  */
 void print_repertoire();
 
+/**
+ * @brief Thread pour l'envoi et la réception des fichiers
+ * 
+ * @param argpointer Pointeur vers une structure (on utilisera argsfichier)
+ */
 void * thread_fichier(void * argpointer);
 
 /**
