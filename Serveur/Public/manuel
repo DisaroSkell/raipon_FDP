@@ -7,11 +7,8 @@
 - /manuel
     Globalement ce que vous venez de faire: affiche la liste des commandes.
 
-- /envoifichier [nom fichier] OU /ef [nom fichier]
-    Envoie un fichier de votre répertoire au serveur. Si rien n'est entré, envoie le contenu du répertoire d'envoi.
-
-- /receptionfichier [nom fichier] OU /rf [nom fichier]
-    Récupère un fichier du serveur. Si rien n'est entré, vous montre les fichiers disponibles.
+- /envoifichier (OU /ef) [nom fichier] [taille fichier] [pseudo destinataire]
+    Envoie un fichier de votre répertoire à un client.
 
 - /channel
     Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
