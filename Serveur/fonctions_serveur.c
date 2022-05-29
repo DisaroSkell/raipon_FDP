@@ -223,7 +223,7 @@ void* traitement_serveur(void * paramspointer){
                 for(int i = 0; i < nb_clients_max; i++){
                     // On n'envoie pas de message aux client qui n'existent pas
                     if (channels->occupants[i].socket != 0) {
-                        envoi_direct(i, "Suppression du channel. Retour au général.", "Serveur", indice);
+                        envoi_direct(i, "Suppression du channel. Retour au général.\n", "Serveur", indice);
                     }
                 }
                 
@@ -261,12 +261,13 @@ void* traitement_serveur(void * paramspointer){
 
                     numchan = -1;
                     chan = "Général";
-                }
-                // On envoie à tous les occupants du channel actuel
-                for(int i = 0; i < nb_clients_max; i++){
-                    // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
-                    if (i != numclient && channels->occupants[i].socket != 0) { // Les clients ont tous des sockets différents (ou vide)
-                        envoi_direct(i, msg, channels->occupants[numclient].pseudo, numchan);
+                } else {
+                    // On envoie à tous les occupants du channel actuel
+                    for(int i = 0; i < nb_clients_max; i++){
+                        // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
+                        if (i != numclient && channels->occupants[i].socket != 0) { // Les clients ont tous des sockets différents (ou vide)
+                            envoi_direct(i, msg, channels->occupants[numclient].pseudo, numchan);
+                        }
                     }
                 }
             }
