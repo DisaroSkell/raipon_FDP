@@ -798,8 +798,11 @@ void restaurer_channels() {
         return;
     }
 
-    char * token = strtok(buffer, "\n");
+    char * token;
+    char * reste = buffer;
     int i = 0;
+
+    token = strtok_r(reste, "\n", &reste);
 
     if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
 
@@ -811,7 +814,7 @@ void restaurer_channels() {
 
         if (ligne == NULL) {
             // On n'a rien sur cette ligne, on ignore
-            token = strtok(token, "\0"); // Tentative de passage à la ligne suivante
+            token = strtok_r(reste, "\n", &reste);
             continue;
         }
 
@@ -834,7 +837,7 @@ void restaurer_channels() {
 
         channels[i].description = desc;
 
-        token = strtok(token, "\0"); // Tentative de passage à la ligne suivante
+        token = strtok_r(reste, "\n", &reste);
 
         i++;
     }
