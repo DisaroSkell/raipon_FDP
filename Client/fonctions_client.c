@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 int socketServeur;
 
@@ -116,18 +117,21 @@ int lecture_message(int dS) {
             pthread_t t;
 
             argsf.socket = dS;
-            argsf.nomf = token;
+            argsf.nomf = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(argsf.nomf, token);
 
             token = strtok(NULL, " "); // On regarde le nom du destinataire
             if (token == NULL) {
                 // Il n'y a pas de destinataire spécifié
                 printf("Il faut spécifier le pseudo d'un destinataire");
+                free(argsf.nomf);
                 return strcmp(m, "/fin\n") != 0;
             }
 
             token = strtok(token, "\n");
 
-            argsf.destinataire = token;
+            argsf.destinataire = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(argsf.destinataire, token);
             argsf.action = 1;
             int thread = pthread_create(&t,NULL,thread_fichier,&argsf);
         }
@@ -222,9 +226,18 @@ void envoi_fichier(int dS, char * nomfichier, char * destinataire) {
     strcpy(nomchemin, "Public/");
     strcat(nomchemin, nomfichier);
 
+    printf("Le ficher: %s\n", nomfichier);
+    printf("Le chemin: %s\n", nomchemin);
+
+    // Au cas où le fichier existe pas
+    if (access(nomchemin, F_OK) != 0) {
+        perror("Ce fichier n'existe pas");
+        return;
+    }
+
     fp = fopen(nomchemin, "rb");
     if (fp == NULL) {
-        perror("Erreur durant la lecture du fichier, non trouvé");
+        perror("Erreur durant la lecture du fichier");
         return;
     }
 

@@ -137,7 +137,7 @@ void* traitement_serveur(void * paramspointer){
             envoi_message(clients[destinataire].socket, co);
             free(taillefichier);
             free(co);
-            free(cmd.nomf);
+            // free(cmd.nomf); // Il ne veut pas se free
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             free(cmd.nom_cmd);
@@ -394,6 +394,11 @@ char * reception_message(int numclient, int numchan, int posclient) {
 
 int chercher_client(char * pseudo, int taille, client tabcli[taille]) {
     int resultat = -1;
+
+    if (strcmp(pseudo, "") == 0) {
+        perror("Pseudo à chercher vide");
+        return -1;
+    }
 
     for(int i = 0; i < taille; i++){
         if (strcmp(tabcli[i].pseudo, pseudo) == 0) {
@@ -1018,7 +1023,8 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
                 return result;
             }
 
-            result.user = token;
+            result.user = (char *) malloc(strlen(token)*sizeof(char));
+            strcpy(result.user, token);
         }
         else if (strcmp(cmd,"channel") == 0 || strcmp(cmd,"channel\n") == 0) {
             result.nom_cmd = (char *) malloc(8*sizeof(char));
