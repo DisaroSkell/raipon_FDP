@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 
 // Tableau de clients contenant tous les membres connectés
@@ -267,7 +268,6 @@ void* traitement_serveur(void * paramspointer){
             envoi_membres(numclient, numchan);
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
-            free(cmd.nom_cmd);
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", -10);
         }
         else { // On envoie un message à tous les clients du channel
@@ -706,28 +706,44 @@ void envoi_membres(int numclient, int numchan) {
 }
 
 void envoi_channels(int numclient) {
-    envoi_message(clients[numclient].socket, "[Serveur] Voici la liste des channels:\n");
+    /*
+    Format du message:
+    Liste des channels:             (20 caractères)
+        - [[nomchan]]: [descchan]   (4 caractères + taille du nom + 3 caractères + taille de la description + 1 caractère)
+        - [[nomchan]]: [descchan]   (ces lignes seront présentes nb_channels_max fois)
+        ...
+    */
 
-    char * infochan;
+    int taillemsg = 20;
 
     for (int i = 0; i < nb_channels_max; i++) {
         char * nomchan = channels[i].nom;
         if (strcmp(nomchan, "") != 0) {
-            char * descchan = channels[i].description;
-
-            // On envoie "\t- [[nomchan]]: [descchan]\n"
-            infochan = (char *) malloc((4 + strlen(nomchan) + 3 + strlen(descchan) + 1)*sizeof(char));
-            strcpy(infochan, "\t- [");
-            strcat(infochan, nomchan);
-            strcat(infochan, "]: ");
-            strcat(infochan, descchan);
-            strcat(infochan, "\n");
-
-            envoi_message(clients[numclient].socket, infochan);
-
-            free(infochan);
+            taillemsg += (4 + strlen(nomchan) + 3 + strlen(channels[i].description) + 1);
         }
     }
+
+    char * msginfo = (char *) malloc(taillemsg*sizeof(char));
+    strcpy(msginfo, "Liste des channels:\n");
+
+    for (int i = 0; i < nb_channels_max; i++) {
+        char * nomchan = channels[i].nom;
+        if (strcmp(nomchan, "") != 0) {
+            strcat(msginfo, "\t- [");
+            strcat(msginfo, nomchan);
+            strcat(msginfo, "]: ");
+            strcat(msginfo, channels[i].description);
+            strcat(msginfo, "\n");
+        }
+    }
+
+    if (strlen(msginfo) > 20) { // On envoie les channels
+        envoi_direct(numclient, msginfo, "Serveur", -10);
+    } else { // Sinon c'est qu'il n'y en a pas
+        envoi_direct(numclient, "Il n'y a aucun channel\n", "Serveur", -10);
+    }
+
+    free(msginfo);
 }
 
 void sauvegarde_channels() {
@@ -751,6 +767,12 @@ void sauvegarde_channels() {
 }
 
 void restaurer_channels() {
+    // Au cas où le fichier existe pas
+    if (access("Public/channels", F_OK) != 0) {
+        printf("Pas de fichier channel, rien à restaurer.\n");
+        return;
+    }
+    
     FILE * f = fopen("Public/channels", "rb");
 
     if (f == NULL) {
@@ -771,30 +793,44 @@ void restaurer_channels() {
         return;
     }
 
-    printf("Le fichier: %s\n", buffer);
-
-    char * token = strtok(buffer, " ");
+    char * token = strtok(buffer, "\n");
     int i = 0;
 
     if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
 
-    while (token) {
-        channels[i].nom = (char *) malloc(strlen(token)*sizeof(char));
-        strcpy(channels[i].nom, token);
+    while (token && i < nb_channels_max) {
+        char * ligne = (char *) malloc(strlen(token)*sizeof(char));
+        strcpy(ligne, token);
+
+        ligne = strtok(ligne, " ");
+
+        if (ligne == NULL) {
+            // On n'a rien sur cette ligne, on ignore
+            token = strtok(NULL, "\n");
+            continue;
+        }
+
+        channels[i].nom = (char *) malloc(strlen(ligne)*sizeof(char));
+        strcpy(channels[i].nom, ligne);
+
+        ligne = strtok(NULL, " ");
+
+        char * desc = (char *) malloc((strlen(token)-strlen(channels[i].nom))*sizeof(char));
+        strcpy(desc, "");
+
+        while(ligne) { // Si on n'a pas de description sur cette ligne, on n'en met pas
+            strcat(desc, ligne);
+            ligne = strtok(NULL, " ");
+            if (ligne) {
+                strcat(desc, " ");
+            }
+        }
+
+        channels[i].description = desc;
 
         token = strtok(NULL, "\n");
 
-        if (token) {
-            channels[i].description = (char *) malloc(strlen(token)*sizeof(char));
-            strcpy(channels[i].description, token);
-            printf("Token après espace n: %s\n", token);
-        }
-
         i++;
-
-        token = strtok(NULL, " ");
-
-        printf("Token après backslash n: %s\n", token);
     }
 
     sem_post(&sem_tab_channels);
@@ -1055,6 +1091,20 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
                 free(part1);
                 free(part2);
+            }
+
+            // On enlève le \n de la fin
+
+            desc = strtok(desc, "\n");
+
+            if (desc == NULL) { // Même situation qu'avant
+                perror("Vous devez mettre une description après le nom du channel !");
+                result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                free(result.nomf);
+                return result;
             }
 
             result.message = desc;
