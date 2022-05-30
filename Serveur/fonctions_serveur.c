@@ -811,7 +811,7 @@ void restaurer_channels() {
 
         if (ligne == NULL) {
             // On n'a rien sur cette ligne, on ignore
-            token = strtok(NULL, "\n");
+            token = strtok(token, "\0"); // Tentative de passage à la ligne suivante
             continue;
         }
 
@@ -820,20 +820,21 @@ void restaurer_channels() {
 
         ligne = strtok(NULL, " ");
 
+        // La description, c'est la ligne sans le nom du channel
         char * desc = (char *) malloc((strlen(token)-strlen(channels[i].nom))*sizeof(char));
         strcpy(desc, "");
 
         while(ligne) { // Si on n'a pas de description sur cette ligne, on n'en met pas
             strcat(desc, ligne);
             ligne = strtok(NULL, " ");
-            if (ligne) {
+            if (ligne) { // On rajoute un espace que s'il reste des choses à rajouter après
                 strcat(desc, " ");
             }
         }
 
         channels[i].description = desc;
 
-        token = strtok(NULL, "\n");
+        token = strtok(token, "\0"); // Tentative de passage à la ligne suivante
 
         i++;
     }
