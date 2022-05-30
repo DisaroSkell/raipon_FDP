@@ -119,8 +119,6 @@ void* traitement_serveur(void * paramspointer){
             free(cmd.user);
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", -10);
-            } else {
-                envoi_direct(numclient, clients[destinataire].IP, "Serveur", -10);
             }
 
             char * taillefichier = (char *) malloc(4 * sizeof(char));
