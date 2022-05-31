@@ -195,23 +195,12 @@ void restaurer_channels();
 char * lire_manuel();
 
 /**
- * @brief Envoie le contenu du répertoire Public (inspiré de: https://askcodez.com/implementation-de-la-commande-ls-al-en-c.html)
- * 
- * @param numclient Indice du client dans le tableau
- */
-void envoi_repertoire(int numclient);
-
-/**
-<<<<<<< HEAD
- * @brief Analyse le message pour y reconnaître une commande (utilise reception message)
-=======
  * @brief Ferme le serveur
  */
 void fermeture_serveur();
 
 /**
- * @brief Analyse le message pour y reconnaître une commande
->>>>>>> 6f43dcd (commande fermeture erreur)
+ * @brief Analyse le message pour y reconnaître une commande (utilise reception message)
  * 
  * @param msg Message à analyser
  * @param numclient Indice du client dans le tableau
