@@ -264,7 +264,16 @@ void* traitement_serveur(void * paramspointer){
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "membres") == 0) {
             free(cmd.nom_cmd);
-            envoi_membres(numclient, numchan);
+            if (cmd.taillef == -1) { // On envoie la liste du channel actuel
+                envoi_membres(numclient, numchan);
+            } else {
+                int chancherche = chercher_channel(cmd.nomf); // On rappelle, le général n'est pas dans le tableau channels
+                if (chancherche == -1 && strcmp(cmd.nomf, "Général") != 0) { // On n'a pas trouvé le channel
+                    envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
+                } else {
+                    envoi_membres(numclient, chancherche);
+                }
+            }
         }
         else if (cmd.id_op == -1) { // On envoie un feedback d'erreur au client
             envoi_direct(numclient, "Commande non reconnue, faites /manuel pour plus d'informations\n", "Serveur", -10);
@@ -678,11 +687,20 @@ void envoi_membres(int numclient, int numchan) {
         for (int i = 0; i < nb_clients_max*nb_channels_max; i++) {
             if (clients[i].socket != 0) {
                 char * pseudo = clients[i].pseudo;
-                // On envoie "\t- [pseudo]\n"
-                cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
-                strcpy(cli, "\t- ");
-                strcat(cli, pseudo);
-                strcat(cli, "\n");
+
+                if (strcmp(pseudo, clients[numclient].pseudo) == 0) {
+                    // On envoie "\t- [pseudo] (Vous)\n"
+                    cli = (char *) malloc((3 + strlen(pseudo) + 8)*sizeof(char));
+                    strcpy(cli, "\t- ");
+                    strcat(cli, pseudo);
+                    strcat(cli, " (Vous)\n");
+                } else {
+                    // On envoie "\t- [pseudo]\n"
+                    cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
+                    strcpy(cli, "\t- ");
+                    strcat(cli, pseudo);
+                    strcat(cli, "\n");
+                }
 
                 envoi_message(clients[numclient].socket, cli);
 
@@ -1203,9 +1221,26 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
                 strcpy(result.nomf, token);
             }
         }
-        else if (strcmp(cmd,"membres\n") == 0) {
+        else if (strcmp(cmd,"membres") == 0 || strcmp(cmd,"membres\n") == 0) {
             result.nom_cmd = (char *) malloc(7*sizeof(char));
             strcpy(result.nom_cmd, "membres");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le channel dont on veut la liste
+
+            // On utilise les mêmes variables que ef et rf
+            if (token == NULL) { // S'il n'y en a pas on enverra la liste pour le channel actuel
+                result.taillef = -1;
+            } else { // On donne le nom du channel
+                // On doit évidemment enlever le \n
+                token = strtok(token, "\n");
+
+                if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant
+                    result.taillef = -1;
+                } else {
+                    result.nomf = (char *) malloc(strlen(token)*sizeof(char));
+                    strcpy(result.nomf, token);
+                }
+            }
         }
         else {
             perror("Commande non reconnue");
