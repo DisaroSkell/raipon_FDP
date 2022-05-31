@@ -10,7 +10,7 @@
 - /envoifichier (OU /ef) [nom fichier] [pseudo destinataire]
     Envoie un fichier de votre répertoire à un client.
 
-- /channel
+- /channel [nom du channel] (Optionnel)
     Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
 
 - /creerchannel (OU /cc) [nom du channel] [description du channel]
@@ -23,8 +23,8 @@
 - /supprimerchannel (OU /sc) [nom du channel]
     Permet de supprimer un des channels existant.
 
-- /membres
-    Permet de lister les membres du channel que vous occupez.
+- /membres [nom du channel] (Optionnel)
+    Permet de lister les membres du channel entré. Si rien n'est entré, vous montre les membres du channel que vous occupez.
     
 - /turnoff
     Éteint le serveur.
