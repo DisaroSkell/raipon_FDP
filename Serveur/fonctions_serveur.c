@@ -182,7 +182,8 @@ void* traitement_serveur(void * paramspointer){
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "cc") == 0) {
             free(cmd.nom_cmd);
-            if (chercher_channel(cmd.nomf) != -1) {
+            if (chercher_channel(cmd.nomf) != -1 || strcmp(cmd.nomf, "Général") == 0 || strcmp(cmd.nomf, "Direct") == 0) {
+                // On n'a pas le droit de créer un autre Général (logique) ou un channel Direct (pour éviter la confusion avec les mp)
                 free(cmd.nomf);
                 free(cmd.message);
                 envoi_direct(numclient, "Channel déjà existant. /channel pour les voir tous.\n", "Serveur", -10);
