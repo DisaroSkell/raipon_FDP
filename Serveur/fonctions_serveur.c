@@ -384,7 +384,10 @@ char * reception_message(int numclient, int numchan, int posclient) {
 
     // On reçoit la taille du message
     ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
-    if (rcv_len == -1) perror("Erreur réception taille message");
+    if (rcv_len == -1) {
+        perror("Erreur réception taille message");
+        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", "Serveur" );
+    } 
     if (rcv_len == 0) {
         // On arrête tout
         deconnexion(numclient, numchan, posclient);
@@ -394,7 +397,10 @@ char * reception_message(int numclient, int numchan, int posclient) {
     // On reçoit le message
     char * msg = (char *) malloc((len)*sizeof(char));
     ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
-    if (rcv == -1) perror("Erreur réception message");
+    if (rcv == -1){
+        perror("Erreur réception message");
+        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", "Serveur" );
+    } 
     if (rcv == 0) {
         // On arrête tout
         deconnexion(numclient, numchan, posclient);
@@ -917,6 +923,93 @@ void envoi_repertoire(int numclient) {
         free(msg);
     }
     closedir(mydir);
+}
+
+void recup_fichier(int socket, char * nomfichier, long taillefichier) {
+    FILE *fp;
+    char buffer[SIZE];
+
+    // On met le chemin relatif du fichier dans un string
+    char * cheminf = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(cheminf, "Public/");
+    strcat(cheminf, nomfichier);
+    
+    fp = fopen(cheminf, "w");
+    
+    ssize_t rcv_f;
+    while (ftell(fp) < taillefichier) { // On s'arrête quand on a reçu l'équivalent de la taille du fichier
+        rcv_f = recv(socket, buffer, SIZE, 0);
+        if (rcv_f == -1) {
+            perror("Erreur de reception du fichier !");
+            return;
+        }
+        if (rcv_f == 0) {
+            perror("Erreur de connexion au client !");
+            return;
+        }
+
+        fprintf(fp, "%s", buffer);
+    }
+
+    fclose(fp);
+    printf("Fin de la réception du fichier %s\n", nomfichier);
+}
+
+void envoi_fichier(int numclient, char * nomfichier) {
+    FILE *fp;
+
+    // On met le chemin relatif du fichier dans un string
+    char * nomchemin = (char *) malloc((strlen(nomfichier)+7)*sizeof(char));
+    strcpy(nomchemin, "Public/");
+    strcat(nomchemin, nomfichier);
+
+    fp = fopen(nomchemin, "r");
+    if (fp == NULL) {
+        perror("Erreur durant la lecture du fichier");
+        envoi_direct(numclient, "Erreur durant la lecture du fichier\n", "Serveur", "Serveur");
+        return;
+    }
+
+    char data[SIZE] = {0};
+
+    long int taillefichier;
+
+    if (fp) {
+        fseek (fp, 0, SEEK_END);
+        taillefichier = ftell (fp);
+        fseek (fp, 0, SEEK_SET);
+    } else {
+        perror("Problème dans la lecture du fichier");
+        envoi_direct(numclient, "Problème dans la lecture du fichier\n", "Serveur", "Serveur");
+    }
+
+    // La commande sera "/rf [nom fichier] [taille fichier]\0"
+    // D'où les additions:
+    char * commande = (char *) malloc((3 + strlen(nomfichier) + 1 + tailleint(taillefichier) + 1) * sizeof(char));
+
+    strcpy(commande, "/ef ");
+    strcat(commande, nomfichier);
+    strcat(commande, " ");
+
+    char * taillef = (char *) malloc((tailleint(taillefichier) + 1) * sizeof(char));
+    sprintf(taillef, "%ld", taillefichier);
+    strcat(commande, taillef);
+    
+    envoi_message(clients[numclient].socket, commande);
+
+    // Après avoir envoyé la commande, on envoie le fichier
+    while(fgets(data, SIZE, fp) != NULL) {
+        ssize_t envoi = send(clients[numclient].socket, data, SIZE, 0);
+        if (envoi == -1) {
+            perror("Erreur dans l'envoi du fichier");
+            envoi_direct(numclient, "Erreur durant l'envoi du fichier'\n", "Serveur", "Serveur");
+            return;
+        }
+
+        bzero(data, SIZE);
+    }
+
+    printf("Fichier envoyé à %s !\n", clients[numclient].pseudo);
 }
 
 void fermeture_serveur() {
