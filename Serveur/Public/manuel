@@ -7,21 +7,24 @@
 - /manuel
     Globalement ce que vous venez de faire: affiche la liste des commandes.
 
-- /envoifichier (OU /ef) [nom fichier] [taille fichier] [pseudo destinataire]
+- /envoifichier (OU /ef) [nom fichier] [pseudo destinataire]
     Envoie un fichier de votre répertoire à un client.
 
 - /channel
     Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
 
 - /creerchannel (OU /cc) [nom du channel] [description du channel]
-    Permet de créer un nouveau channel (s'il y a de la place)
+    Permet de créer un nouveau channel (s'il y a de la place).
     /!\ Le channel doit être en un seul mot, sinon ça ira dans la description /!\
 
 - /modifierchannel (OU /mc) [nom du channel] [description du channel]
-    Permet de modifier la description d'un channel existant
+    Permet de modifier la description d'un channel existant.
 
 - /supprimerchannel (OU /sc) [nom du channel]
-    Permet de supprimer un des channels existant
+    Permet de supprimer un des channels existant.
 
 - /membres
     Permet de lister les membres du channel que vous occupez.
+    
+- /turnoff
+    Éteint le serveur.
