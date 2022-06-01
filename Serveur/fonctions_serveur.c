@@ -686,12 +686,12 @@ int aurevoir(int numclient, int numchan) {
     for (int i = 0; i < nb_clients_max; i++) {
         if (clients[i].socket != 0) {
             if (i == numclient) {
-                if (envoi_message(clients[i].socket, message2) == -1) {
-                    result = -1;
+                if (envoi_message(channels[numchan].occupants[i].socket, message2) == -1) {
+                    result--;
                 }
             } else {
-                if (envoi_message(clients[i].socket, message1) == -1) {
-                    result = -1;
+                if (envoi_message(channels[numchan].occupants[i].socket, message1) == -1) {
+                    result--;
                 }
             }
         }

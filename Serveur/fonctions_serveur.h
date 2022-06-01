@@ -147,7 +147,7 @@ int bienvenue(int numclient, int numchan);
  * 
  * @param numclient Index du client dans le tableau clients
  * @param numchan Index du channel dans le tableau channels
- * @return -1 si problème d'envoi
+ * @return 0 si tout s'est bien passé, nombre d'échec d'envoi en négatif sinon
  */
 int aurevoir(int numclient, int numchan);
 
