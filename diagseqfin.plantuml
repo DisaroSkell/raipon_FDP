@@ -19,18 +19,28 @@ loop communication
   alt commande "/membres [nomChan]"
     Serveur -> Client1 : Envoie la liste des gens de son channel (ou celui en paramètre)
   end
-  alt commande "/cc"
+  alt commande "/cc [nom channel] [description channel]"
     Client1 -> Serveur : Envoie la commande
-   Serveur -> Serveur : Créer un channel
+    Serveur -> Serveur : Créé un channel
   end
-  alt commande "/mc"
-    Client1 -> Serveur : Modifie le channel
+  alt commande "/mc [nom channel] [description channel]"
+    Client1 -> Serveur : Envoie la commande
+    Serveur -> Serveur : Modifie le channel
   end
-  alt commande "/sc"
-    Client1 -> Serveur : Supprime le channel
+  alt commande "/sc [nom channel]"
+    Client1 -> Serveur : Envoie la commande
+    Serveur -> Serveur : Supprime le channel
   end
-  
-  alt commande "/ef"
+  alt commande "/rejoindre [nom channel]"
+    Client1 -> Serveur : Rejoint le channel
+  end
+  alt commande "/channel [nom channel]"
+    Client1 -> Serveur : Envoie un message dans le channe
+  end
+  alt commande "/quitter [nom channel]"
+    Client1 -> Serveur : Quitte le channnel
+  end
+  alt commande "/ef [nom fichier] [pseudo destinataire]"
     Client1 -> Serveur: Envoi du fichier choisi
   end
   alt commande "/manuel"
