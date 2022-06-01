@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
     char * m = (char *) malloc(20*sizeof(char));
     while(fgets(m, 20, fp) != NULL) {
       if (strcmp(inet_ntoa(aC.sin_addr), m) == 0) {
-        envoi_message(dSC, "Vous êtes malheuresement banni");
+        envoi_message(dSC, "Vous êtes malheureusement banni");
         client init;
         init.socket = 0;
         init.pseudo = "";
