@@ -123,7 +123,7 @@ int lecture_message(int dS) {
             token = strtok(NULL, " "); // On regarde le nom du destinataire
             if (token == NULL) {
                 // Il n'y a pas de destinataire spécifié
-                printf("Il faut spécifier le pseudo d'un destinataire");
+                printf("Il faut spécifier le pseudo d'un destinataire\n");
                 free(argsf.nomf);
                 return strcmp(m, "/fin\n") != 0;
             }
