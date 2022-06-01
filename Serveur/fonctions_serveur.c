@@ -83,10 +83,20 @@ void* traitement_serveur(void * paramspointer){
             if (destinataire == -1) { // On envoie un feedback d'erreur au client
                 envoi_direct(numclient, "Destinataire non trouvé !\n", "Serveur", -10);
             } else {
-                while (strchr(cmd.message, '\n') == NULL) {
-                    char * boutmessage = reception_message(numclient, numchan, posclient);
-                    strcat(cmd.message, boutmessage);
-                    free(boutmessage);
+                while (cmd.message[strlen(cmd.message)-1] != '\n') {
+                    char * part1 = (char *) malloc((strlen(cmd.message)+1)*sizeof(char));
+                    strcpy(part1, cmd.message);
+
+                    char * part2 = reception_message(numclient, numchan, posclient);
+
+                    free(cmd.message);
+
+                    cmd.message = (char *) malloc((strlen(part1)+strlen(part2)+1)*sizeof(char));
+                    strcpy(cmd.message, part1);
+                    strcat(cmd.message, part2);
+
+                    free(part1);
+                    free(part2);
                 }
                 cmd.message = censure(cmd.message);
                 
@@ -1055,9 +1065,10 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
             while (token != NULL) {
                 strcat(mp, token);
-                strcat(mp, " ");
-
                 token = strtok(NULL, " ");
+                if (token) { // On ajoute l'espace que s'il y a une suite
+                    strcat(mp, " ");
+                }
             }
 
             result.message = mp;
