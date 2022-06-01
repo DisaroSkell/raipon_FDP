@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     i = chercher_place_cli(nb_clients_max*nb_channels_max, clients);
     sem_post(&sem_tab_clients);
 
-    if (i == -1) {
+    if (i == nb_clients_max*nb_channels_max) {
       perror("Aucune place n'a été trouvée, c'est pas normal.");
       exit(0);
     }

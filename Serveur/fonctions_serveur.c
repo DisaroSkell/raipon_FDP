@@ -504,18 +504,13 @@ int chercher_client(char * pseudo, int taille, client tabcli[taille]) {
 }
 
 int chercher_place_cli(int taille, client tabcli[taille]) {
-    int resultat = -1;
     int i = 0;
 
-    while (i < taille && resultat == -1) {
-        if (tabcli[i].socket == 0) {
-            resultat = i;
-        }
-
+    while (i < taille && tabcli[i].socket !=0) {
         i++;
     }
 
-    return resultat;
+    return i;
 }
 
 int chercher_channel(char * nom) {
@@ -563,7 +558,7 @@ int rejoindre_channel(int numclient, int numchan) {
     }
 
     int placelibre = chercher_place_cli(nb_clients_max, channels[numchan].occupants);
-    if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
+    if (placelibre == nb_clients_max) { // Le channel est plein (cf chercher_place)
         resultat = -2;
     } else {
         if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
