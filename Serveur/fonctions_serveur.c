@@ -180,22 +180,24 @@ void* traitement_serveur(void * paramspointer){
             if (vaten == -1) { // On n'a pas trouvé le channel
                 envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
             } else {
-                aurevoir(numclient, numchan);
-                if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+                aurevoir(numclient, vaten);
                 // Client vide
                 client init;
                 init.socket = 0;
                 init.pseudo = "";
                 init.IP = "";
 
+                if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
                 channels[vaten].occupants[posclient] = init;
-
-                int numchan = -1;
-                char * chan = "Général";
-                int posclient = -1;
                 sem_post(&sem_tab_channels);
 
-                envoi_direct(numclient, "Vous écrivez maintenant dans le général\n", "Serveur", -10);
+                if (numchan == vaten) {
+                    numchan = -1;
+                    chan = "Général";
+                    posclient = -1;
+
+                    envoi_direct(numclient, "Vous écrivez maintenant dans le général\n", "Serveur", -10);
+                }
             }
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
@@ -564,17 +566,8 @@ int rejoindre_channel(int numclient, int numchan) {
     if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
         resultat = -2;
     } else {
-        client nouveau;
-        nouveau.socket = clients[numclient].socket;
-        
-        nouveau.pseudo = (char *) malloc(strlen(clients[numclient].pseudo)*sizeof(char));
-        strcpy(nouveau.pseudo, clients[numclient].pseudo);
-
-        nouveau.IP = (char *) malloc(strlen(clients[numclient].IP)*sizeof(char));
-        strcpy(nouveau.IP, clients[numclient].IP);
-
         if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
-        channels[numchan].occupants[placelibre] = nouveau;
+        channels[numchan].occupants[placelibre] = clients[numclient];
         sem_post(&sem_tab_channels);
 
         resultat = placelibre;
@@ -684,8 +677,8 @@ int aurevoir(int numclient, int numchan) {
     strcat(message2, ".\n");
 
     for (int i = 0; i < nb_clients_max; i++) {
-        if (clients[i].socket != 0) {
-            if (i == numclient) {
+        if (channels[numchan].occupants[i].socket != 0) {
+            if (channels[numchan].occupants[i].socket == clients[numclient].socket) {
                 if (envoi_message(channels[numchan].occupants[i].socket, message2) == -1) {
                     result--;
                 }
