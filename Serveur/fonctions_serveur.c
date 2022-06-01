@@ -26,9 +26,6 @@ sem_t sem_tab_clients;
 // Tableau de channels contenant tous ceux disponibles
 channel channels[nb_channels_max];
 
-// Sémaphore pour la création de channel, gère la disponibilité des places
-sem_t sem_channels_max;
-
 // Sémaphore mutex pour protéger l'accès au tableau channels dans les zones critiques
 sem_t sem_tab_channels;
 
@@ -137,44 +134,117 @@ void* traitement_serveur(void * paramspointer){
             free(co);
             // free(cmd.nomf); // Il ne veut pas se free
         }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "rejoindre") == 0) { // On rejoint un channel
+            free(cmd.nom_cmd);
+            
+            int suivant = chercher_channel(cmd.nomf); // Le général n'est pas dans la liste des channels
+            if (suivant == -1 && strcmp(cmd.nomf, "Général") != 0) { // On n'a pas trouvé le channel
+                envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
+            } else {
+                int place = rejoindre_channel(numclient, suivant);
+                if (place == -2) {
+                    // Le channel à rejoindre est plein
+
+                    // On envoie "Le channel [nom] est plein.\n"
+                    char * pleintxt = (char *) malloc((11 + strlen(cmd.nomf) + 12)*sizeof(char));
+
+                    strcpy(pleintxt,"Le channel ");
+                    strcat(pleintxt, cmd.nomf);
+                    strcat(pleintxt, " est plein.\n");
+                    free(cmd.nomf);
+
+                    envoi_direct(numclient, pleintxt, "Serveur", -10);
+                    free(pleintxt);
+                } else {
+                    free(cmd.nomf);
+
+                    // On va à la destination
+                    if (place != -4) {
+                        chan = channels[suivant].nom;
+                        numchan = suivant;
+                        posclient = place;
+                        bienvenue(numclient, numchan);
+                    } else {
+                        envoi_direct(numclient, "Vous avez déjà rejoint ce channel!\n", "Serveur", -10);
+                    }
+                }
+            }
+        }
+        else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "quitter") == 0) { // On quitte un channel
+            free(cmd.nom_cmd);
+            
+            if (strcmp(cmd.nomf, "Général") == 0) { // On n'a pas le droit de quitter le général
+                envoi_direct(numclient, "Vous n'avez pas le droit de quitter le Général.\n", "Serveur", -10);
+            }
+            int vaten = chercher_channel(cmd.nomf);
+            if (vaten == -1) { // On n'a pas trouvé le channel
+                envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
+            } else {
+                aurevoir(numclient, numchan);
+                if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+                // Client vide
+                client init;
+                init.socket = 0;
+                init.pseudo = "";
+                init.IP = "";
+
+                channels[vaten].occupants[posclient] = init;
+
+                int numchan = -1;
+                char * chan = "Général";
+                int posclient = -1;
+                sem_post(&sem_tab_channels);
+
+                envoi_direct(numclient, "Vous écrivez maintenant dans le général\n", "Serveur", -10);
+            }
+        }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "channel") == 0) { // On change de channel
             free(cmd.nom_cmd);
             if (cmd.taillef == -1) { // On envoie la liste des channels
                 envoi_channels(numclient);
             } else {
-                int suivant = chercher_channel(cmd.nomf); // On rappelle, le général n'est pas dans le tableau channels
-                if (suivant == -1 && strcmp(cmd.nomf, "Général") != 0) { // On n'a pas trouvé le channel
-                    envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
+                if (strcmp(cmd.nomf, "Général") == 0) { // On va écrire dans le général
+                    numchan = -1;
+                    chan = "Général";
+                    posclient = -1;
+                    
+                    envoi_direct(numclient, "Vous écrivez maintenant dans le général\n", "Serveur", -10);
                 } else {
-                    int place = changer_channel(numclient, numchan, suivant);
-                    if (place == -2) {
-                        // Le channel suivant est plein
-
-                        // On envoie "Le channel [nom] est plein.\n"
-                        char * pleintxt = (char *) malloc((11 + strlen(cmd.nomf) + 12)*sizeof(char));
-
-                        strcpy(pleintxt,"Le channel ");
-                        strcat(pleintxt, cmd.nomf);
-                        strcat(pleintxt, " est plein.\n");
-                        free(cmd.nomf);
-
-                        envoi_direct(numclient, pleintxt, "Serveur", -10);
-                        free(pleintxt);
+                    int suivant = chercher_channel(cmd.nomf); // On rappelle, le général n'est pas dans le tableau channels
+                    if (suivant == -1) { // On n'a pas trouvé le channel
+                        envoi_direct(numclient, "Channel inconnu. /channel pour voir les channels disponible.\n", "Serveur", -10);
                     } else {
-                        free(cmd.nomf);
-                        if (numchan != -1) {
-                            // On quitte le channel seulement si c'est pas le Général
-                            aurevoir(numclient, numchan);
-                        }
+                        int place = chercher_client(clients[numclient].pseudo, nb_clients_max, channels[suivant].occupants);
+                        if (place == -1) {
+                            // Le client n'est pas inscrit dans le channel
 
-                        // On va à la destination
-                        numchan = suivant;
-                        if (place != -4) {
+                            // On envoie "Vous n'êtes pas inscrits dans le channel [nom].\n"
+                            char * refus = (char *) malloc((strlen("Vous n'êtes pas inscrits dans le channel ") + strlen(cmd.nomf) + 3)*sizeof(char));
+
+                            strcpy(refus,"Vous n'êtes pas inscrits dans le channel ");
+                            strcat(refus, cmd.nomf);
+                            strcat(refus, ".\n");
+                            free(cmd.nomf);
+
+                            envoi_direct(numclient, refus, "Serveur", -10);
+                            free(refus);
+                        } else {
+
+                            // On va à la destination
+                            chan = channels[suivant].nom;
+                            numchan = suivant;
                             posclient = place;
-                        }
+                            
+                            // On envoie "Vous écrivez dans le channel [nom].\n"
+                            char * acceptation = (char *) malloc((strlen("Vous écrivez dans le channel ") + strlen(cmd.nomf) + 3)*sizeof(char));
 
-                        if (numchan != -1) {
-                            bienvenue(numclient, numchan);
+                            strcpy(acceptation, "Vous écrivez dans le channel ");
+                            strcat(acceptation, cmd.nomf);
+                            strcat(acceptation, ".\n");
+                            free(cmd.nomf);
+                            
+                            envoi_direct(numclient, acceptation, "Serveur", -10);
+                            free(acceptation);
                         }
                     }
                 }
@@ -303,12 +373,13 @@ void* traitement_serveur(void * paramspointer){
 
                     numchan = -1;
                     chan = "Général";
+                    posclient = -1;
                 } else {
                     // On envoie à tous les occupants du channel actuel
                     for(int i = 0; i < nb_clients_max; i++){
                         // On n'envoie pas de message au client qui envoie, ni aux client qui n'existent pas
-                        if (i != numclient && channels->occupants[i].socket != 0) { // Les clients ont tous des sockets différents (ou vide)
-                            envoi_direct(i, msg, channels->occupants[numclient].pseudo, numchan);
+                        if (i != posclient && channels[numchan].occupants[i].socket != 0) { // Les clients ont tous des sockets différents (ou vide)
+                            envoi_direct(i, msg, clients[numclient].pseudo, numchan);
                         }
                     }
                 }
@@ -386,7 +457,7 @@ char * reception_message(int numclient, int numchan, int posclient) {
     ssize_t rcv_len = recv(clients[numclient].socket, &len, sizeof(len), 0);
     if (rcv_len == -1) {
         perror("Erreur réception taille message");
-        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", "Serveur" );
+        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", -10);
     } 
     if (rcv_len == 0) {
         // On arrête tout
@@ -399,7 +470,7 @@ char * reception_message(int numclient, int numchan, int posclient) {
     ssize_t rcv = recv(clients[numclient].socket, msg, len, 0);
     if (rcv == -1){
         perror("Erreur réception message");
-        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", "Serveur" );
+        envoi_direct(numclient, "Erreur réception taille message\n", "Serveur", -10);
     } 
     if (rcv == 0) {
         // On arrête tout
@@ -476,40 +547,40 @@ int chercher_place_chan(int taille, channel tabchan[taille]) {
     return resultat;
 }
 
-int changer_channel(int numclient, int numchan1, int numchan2) {
-    // Client vide, utilisé pour remplacer le client sortant
-    client init;
-    init.socket = 0;
-    init.pseudo = "";
-
+int rejoindre_channel(int numclient, int numchan) {
     // cf les spécifs pour plus d'info
-    int result = -1;
+    int resultat = -1;
 
-    if (numchan1 == numchan2) {
+    if (numchan == -1) { // On est déjà dans le général
+        return resultat;
+    }
+
+    if (chercher_client(clients[numclient].pseudo, nb_clients_max, channels[numchan].occupants) != -1) {
         printf("Nous avons affaire à un petit clown :)\n");
         return -4;
     }
 
-    if (numchan2 !=-1) {
-        int placelibre = chercher_place_cli(nb_clients_max, channels[numchan2].occupants);
-        if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
-            result = -2;
-        } else {
-            sem_wait(&sem_tab_channels);
-            channels[numchan2].occupants[placelibre] = clients[numclient];
-            sem_post(&sem_tab_channels);
-            result = placelibre;
-        }
-    } // On ne fait rien si on est dans le général
+    int placelibre = chercher_place_cli(nb_clients_max, channels[numchan].occupants);
+    if (placelibre == nb_channels_max) { // Le channel est plein (cf chercher_place)
+        resultat = -2;
+    } else {
+        client nouveau;
+        nouveau.socket = clients[numclient].socket;
+        
+        nouveau.pseudo = (char *) malloc(strlen(clients[numclient].pseudo)*sizeof(char));
+        strcpy(nouveau.pseudo, clients[numclient].pseudo);
 
-    if (numchan1 != -1 && result != -2) {
-        sem_wait(&sem_tab_channels);
-        int placelibre = chercher_client(clients[numclient].pseudo, nb_clients_max, channels[numchan1].occupants);
-        channels[numchan1].occupants[placelibre] = init;
+        nouveau.IP = (char *) malloc(strlen(clients[numclient].IP)*sizeof(char));
+        strcpy(nouveau.IP, clients[numclient].IP);
+
+        if (sem_wait(&sem_tab_channels) == -1) perror("Erreur blocage sémaphore");
+        channels[numchan].occupants[placelibre] = nouveau;
         sem_post(&sem_tab_channels);
-    } // On ne fait rien si on est dans le général ou si on a un channel plein
 
-    return result;
+        resultat = placelibre;
+    }
+
+    return resultat;
 }
 
 int bienvenue(int numclient, int numchan) {
@@ -720,11 +791,20 @@ void envoi_membres(int numclient, int numchan) {
         for (int i = 0; i < nb_clients_max; i++) {
             if (channels[numchan].occupants[i].socket != 0) {
                 char * pseudo = channels[numchan].occupants[i].pseudo;
-                // On envoie "\t- [pseudo]\n"
-                cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
-                strcpy(cli, "\t- ");
-                strcat(cli, pseudo);
-                strcat(cli, "\n");
+
+                if (strcmp(pseudo, clients[numclient].pseudo) == 0) {
+                    // On envoie "\t- [pseudo] (Vous)\n"
+                    cli = (char *) malloc((3 + strlen(pseudo) + 8)*sizeof(char));
+                    strcpy(cli, "\t- ");
+                    strcat(cli, pseudo);
+                    strcat(cli, " (Vous)\n");
+                } else {
+                    // On envoie "\t- [pseudo]\n"
+                    cli = (char *) malloc((3 + strlen(pseudo) + 1)*sizeof(char));
+                    strcpy(cli, "\t- ");
+                    strcat(cli, pseudo);
+                    strcat(cli, "\n");
+                }
 
                 envoi_message(clients[numclient].socket, cli);
 
@@ -911,7 +991,7 @@ char * lire_manuel() {
 void fermeture_serveur() {
     for(int i = 0; i < nb_clients_max; i++){
         if (clients[i].socket != 0) {
-            envoi_direct(i, "Fermeture du serveur\n", "Serveur", "Serveur");
+            envoi_direct(i, "Fermeture du serveur\n", "Serveur", -10);
         }
     }
 
@@ -1050,13 +1130,75 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
             result.user = (char *) malloc(strlen(token)*sizeof(char));
             strcpy(result.user, token);
         }
+        else if (strcmp(cmd,"rejoindre") == 0) {
+            result.nom_cmd = (char *) malloc(10*sizeof(char));
+            strcpy(result.nom_cmd, "rejoindre");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le channel à rejoindre
+
+            // On utilise les mêmes variables que ef
+            if (token == NULL) {
+                perror("Vous devez mettre le nom du channel après /rejoindre !");
+                result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                return result;
+            } else { // On donne le nom du channel
+                // On doit évidemment enlever le \n
+                token = strtok(token, "\n");
+
+                if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant
+                    perror("Vous devez mettre le nom du channel après /rejoindre !");
+                    result.id_op = -1;
+                    free(msg);
+                    free(msgmodif);
+                    free(result.nom_cmd);
+                    return result;
+                } else {
+                    result.nomf = (char *) malloc(strlen(token)*sizeof(char));
+                    strcpy(result.nomf, token);
+                }
+            }
+        }
+        else if (strcmp(cmd,"quitter") == 0) {
+            result.nom_cmd = (char *) malloc(8*sizeof(char));
+            strcpy(result.nom_cmd, "quitter");
+
+            token = strtok(NULL, " "); // On regarde la suite, ici: le channel à rejoindre
+
+            // On utilise les mêmes variables que ef
+            if (token == NULL) { 
+                perror("Vous devez mettre le nom du channel après /quitter !");
+                result.id_op = -1;
+                free(msg);
+                free(msgmodif);
+                free(result.nom_cmd);
+                return result;
+            } else { // On donne le nom du channel
+                // On doit évidemment enlever le \n
+                token = strtok(token, "\n");
+
+                if (token == NULL) { // S'il n'y a pas de suite, c'est la situation d'avant 
+                    perror("Vous devez mettre le nom du channel après /quitter !");
+                    result.id_op = -1;
+                    free(msg);
+                    free(msgmodif);
+                    free(result.nom_cmd);
+                    return result;
+                } else {
+                    result.nomf = (char *) malloc(strlen(token)*sizeof(char));
+                    strcpy(result.nomf, token);
+                }
+            }
+        }
         else if (strcmp(cmd,"channel") == 0 || strcmp(cmd,"channel\n") == 0) {
             result.nom_cmd = (char *) malloc(8*sizeof(char));
             strcpy(result.nom_cmd, "channel");
 
             token = strtok(NULL, " "); // On regarde la suite, ici: le channel à rejoindre
 
-            // On utilise les mêmes variables que ef et rf
+            // On utilise les mêmes variables que ef
             if (token == NULL) { // S'il n'y en a pas on enverra la liste des channels
                 result.taillef = -1;
             } else { // On donne le nom du channel
@@ -1230,7 +1372,7 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
             token = strtok(NULL, " "); // On regarde la suite, ici: le channel dont on veut la liste
 
-            // On utilise les mêmes variables que ef et rf
+            // On utilise les mêmes variables que ef
             if (token == NULL) { // S'il n'y en a pas on enverra la liste pour le channel actuel
                 result.taillef = -1;
             } else { // On donne le nom du channel

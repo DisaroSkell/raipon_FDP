@@ -41,7 +41,7 @@ typedef struct commande {
   char * message; // Message à envoyer
   char * user; // Destinataire
 
-  // Pour les commandes ef et rf
+  // Pour la commande ef (et channel mais on triche)
   char * nomf; // Nom du fichier
   int taillef; // Taille du fichier
 }commande;
@@ -123,16 +123,14 @@ int chercher_channel(char * nom);
  */
 int chercher_place_chan(int taille, channel tabcchan[taille]);
 
-
 /**
- * @brief Déplace un utilisateur d'un channel à un autre. Modifie le tableau channels.
+ * @brief Ajoute un client dans le tableau des occupants du channel (sauf s'il est plein)
  * 
  * @param numclient Index du client dans le tableau clients
- * @param numchan1 Index du channel de départ dans le tableau channels
- * @param numchan2 Index du channel d'arrivée dans le tableau channels
- * @return -1 si on va vers le général, -2 si numchan2 est plein, sinon renvoie la position du client dans le tableau des occupants du channel
+ * @param numchan Index du channel à rejoindre dans le tableau channels
+ * @return -1 si on a un problème inattendu, -2 si le channel est plein, sinon renvoie la position du client dans le tableau des occupants du channel
  */
-int changer_channel(int numclient, int numchan1, int numchan2);
+int rejoindre_channel(int numclient, int numchan);
 
 /**
  * @brief Envoie un message de bienvenue dans le channel pour prévenir l'arrivée du client.

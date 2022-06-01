@@ -10,8 +10,14 @@
 - /envoifichier (OU /ef) [nom fichier] [pseudo destinataire]
     Envoie un fichier de votre répertoire à un client.
 
+- /rejoindre [nom du channel]
+    Permet de rejoindre un channel et vous y déplace.
+
+- /quitter [nom du channel]
+    Permet de quitter un channel et vous déplace dans le Général.
+
 - /channel [nom du channel] (Optionnel)
-    Permet de changer de channel où vous écrivez. Si rien n'est entré, vous montre les channels disponibles.
+    Permet de changer de channel où vous écrivez (si vous y êtes inscrit). Si rien n'est entré, vous montre les channels disponibles.
 
 - /creerchannel (OU /cc) [nom du channel] [description du channel]
     Permet de créer un nouveau channel (s'il y a de la place).

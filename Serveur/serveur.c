@@ -15,7 +15,6 @@ extern sem_t sem_clients_max;
 extern sem_t sem_tab_clients;
 
 extern channel channels[nb_channels_max];
-extern sem_t sem_channels_max;
 extern sem_t sem_tab_channels;
 
 int main(int argc, char *argv[]) {
@@ -30,7 +29,6 @@ int main(int argc, char *argv[]) {
   if (sem_init(&sem_clients_max, PTHREAD_PROCESS_SHARED, nb_clients_max*nb_channels_max) == -1) perror("Erreur dans la création de la sémaphore de création de threads");
   if (sem_init(&sem_tab_clients, PTHREAD_PROCESS_SHARED, 1) == -1) perror("Erreur dans la création de la sémaphore du tableau clients");
 
-  if (sem_init(&sem_channels_max, PTHREAD_PROCESS_SHARED, nb_channels_max) == -1) perror("Erreur dans la création de la sémaphore de channels");
   if (sem_init(&sem_tab_channels, PTHREAD_PROCESS_SHARED, 1) == -1) perror("Erreur dans la création de la sémaphore du tableau de channels");
   
   // Client vide
@@ -201,5 +199,5 @@ int main(int argc, char *argv[]) {
   sem_destroy(&sem_clients_max);
   sem_destroy(&sem_tab_clients);
 
-  sem_destroy(&sem_channels_max);
+  sem_destroy(&sem_tab_channels);
 }
