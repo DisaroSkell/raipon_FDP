@@ -91,8 +91,8 @@ void* traitement_serveur(void * paramspointer){
                 cmd.message = censure(cmd.message);
                 
                 envoi_direct(destinataire, cmd.message, clients[numclient].pseudo, -2);
-                free(cmd.message);
             }
+            free(cmd.message);
         }
         else if (cmd.id_op == 1 && strcmp(cmd.nom_cmd, "fin") == 0) {
             free(cmd.nom_cmd);
@@ -1051,7 +1051,6 @@ commande gestion_commande(char * slashmsg, int numclient, int numchan, int poscl
 
             // La longueur du message à envoyer, c'est la longueur de la commande sans le slash (msg) sans la commande (result.nom_cmd) et sans l'utilisateur (result.user) (-2 avec les 2 espaces)
             char * mp = (char *) malloc((strlen(msg)-strlen(result.nom_cmd)-strlen(result.user)-2)*sizeof(char));
-            free(msg);
             strcpy(mp,"");
 
             while (token != NULL) {

@@ -1,4 +1,4 @@
-#define nb_clients_max 3 // Nombre de client maximum pouvant être accueillis sur un channel en simultané
+#define nb_clients_max 2 // Nombre de client maximum pouvant être accueillis sur un channel en simultané
 #define nb_channels_max 2 // Nombre de channels maximum pouvant être actifs en même temps
 #define taille_pseudo 30 // Taille du pseudo en comptant le \0
 #define SIZE 1024 // Taille du buffer
