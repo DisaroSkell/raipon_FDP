@@ -33,9 +33,6 @@ loop communication
   alt commande "/ef"
     Client1 -> Serveur: Envoi du fichier choisi
   end
-  alt commande "/rf"
-    Serveur -> Client2: Envoi du fichier choisi
-  end
   alt commande "/manuel"
     Serveur -> Client1: Envoi fichier texte
   end
