@@ -1414,17 +1414,11 @@ char * censure(char * message) {
         }
         token = strtok(m, "\n");
         str_replace(message, m, replace);
-        mettreEnMajuscule(m);
-        str_replace(message, m, replace);
     }
     fclose(censure);
     free(nomcheminCen);
     free(m);
     return message;
-}
-
-void mettreEnMajuscule(char* string){
-    string[0]= string[0] - 32;
 }
 
 void str_replace(char *target, const char *needle, const char *replacement) {

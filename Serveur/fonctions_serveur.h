@@ -217,13 +217,6 @@ commande gestion_commande(char * msg, int numclient, int numchan, int posclient)
 char * censure(char * message);
 
 /**
- * @brief Met le String en majuscule
- * 
- * @param string Le String en majuscule
- */
-void mettreEnMajuscule(char* string);
-
-/**
  * @brief Remplace des caractères dans un string (source: https://stackoverflow.com/questions/32413667/replace-all-occurrences-of-a-substring-in-a-string-in-c)
  */
 void str_replace(char *target, const char *needle, const char *replacement);
