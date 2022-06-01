@@ -1,0 +1,59 @@
+@startuml
+
+Client1 -> Serveur: Authentification
+Serveur -> Client1: OK
+Client2 -> Serveur: Authentification
+Serveur -> Client2: OK
+loop communication
+  Client1 -> Serveur: Envoi d'un message
+  Serveur -> Client2: Relai du message (thread1)
+  Client2 -> Serveur: Message reçu
+  Client2 -> Serveur: Envoi d'un message
+  Serveur -> Client1: Relai du message (thread2)
+  Client1 -> Serveur: Message reçu
+  alt commande "/mp [pseudonyme] [message]"
+    Client1 -> Serveur: Envoi d'un message privé
+    Serveur -> Client2: Relai du message privé
+    Client2 -> Serveur: Message reçu
+  end
+  alt commande "/membres [nomChan]"
+    Serveur -> Client1 : Envoie la liste des gens de son channel (ou celui en paramètre)
+  end
+  alt commande "/cc"
+    Client1 -> Serveur : Envoie la commande
+   Serveur -> Serveur : Créer un channel
+  end
+  alt commande "/mc"
+    Client1 -> Serveur : Modifie le channel
+  end
+  alt commande "/sc"
+    Client1 -> Serveur : Supprime le channel
+  end
+  
+  alt commande "/ef"
+    Client1 -> Serveur: Envoi du fichier choisi
+  end
+  alt commande "/rf"
+    Serveur -> Client2: Envoi du fichier choisi
+  end
+  alt commande "/manuel"
+    Serveur -> Client1: Envoi fichier texte
+  end
+    alt commande "/fin"
+    Serveur -> Client1: Arrêt communication
+    Serveur -> Client2: Arrêt communication
+  end
+  alt ctrl+c serveur
+    Serveur -> Client1: Fermeture serveur
+    Serveur -> Client2 : Fermeture serveur
+  end
+  alt ctrl+c client1
+    Client1 -> Serveur: Arrêt communication
+    Client1 -> Client2: Arrêt communication
+  end
+  alt commande "/turnoff"
+    Serveur -> Client1 : Fermeture du serveur
+    Serveur -> Client2 : Fermeture du serveur
+  end  
+end
+@enduml
